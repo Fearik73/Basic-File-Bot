@@ -1,0 +1,5 @@
+pyrofork==2.3.50
+tgcrypto
+pymongo
+aiohttp
+python-dotenv
