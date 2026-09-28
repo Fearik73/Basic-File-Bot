@@ -42,7 +42,7 @@ SETTINGS_IMAGE = os.environ.get("SETTINGS_IMAGE", "https://files.catbox.moe/3yxe
 
 SHORT_URL = os.environ.get("SHORT_URL", "")
 SHORT_API = os.environ.get("SHORT_API", "")
-SHORT_TUT = os.environ.get("SHORT_TUT", "https://t.me/How_to_Download_7x/26")
+SHORT_TUT = os.environ.get("SHORT_TUT", "")
 
 
 START_BUTTONS = [
