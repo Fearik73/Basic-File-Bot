@@ -80,7 +80,7 @@ async def _schedule_auto_delete(msg: Message, delay: int):
 async def _schedule_notice_expiry(notice: Message, delay: int):
     await asyncio.sleep(delay)
     try:
-        await notice.edit_text("<b><i>Time is over Your files has been deleted. ✅</i></b>")
+        await notice.edit_text("<b><i>file deleted ✅</i></b>")
     except Exception:
         pass
 
