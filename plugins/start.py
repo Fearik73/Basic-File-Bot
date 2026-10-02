@@ -36,7 +36,7 @@ async def send_shortener_gate(client: Client, message: Message, payload: str):
     tutorial_link = client.settings.get("tutorial_link") or short_link
 
     buttons = InlineKeyboardMarkup([
-        [styled_button("ᴄʟɪᴄᴋ ʜᴇʀᴇ ᴛᴏ ᴅᴏᴡɴʟᴏᴀᴅ", url=short_link, style="danger")],
+        [styled_button("• ᴄʟɪᴄᴋ ʜᴇʀᴇ ᴛᴏ ᴅᴏᴡɴʟᴏᴀᴅ •", url=short_link, style="danger")],
         [
             styled_button("ᴛᴜᴛᴏʀɪᴀʟ", url=tutorial_link, style="primary"),
             styled_button("ᴄʟᴏꜱᴇ", callback_data="close", style="primary"),
@@ -46,7 +46,7 @@ async def send_shortener_gate(client: Client, message: Message, payload: str):
     await send_styled(
         client,
         message.chat.id,
-        "<b>➲ ʏᴏᴜʀ ʟɪɴᴋ ɪꜱ ʀᴇᴀᴅʏ!</b>\n\n<i>Click the button below to get your file.</i>",
+        "<b>➲ ʏᴏᴜʀ ʟɪɴᴋ ɪꜱ ʀᴇᴀᴅʏ!</b>\n\n<i>_Click the button given below to download your file_</i>",
         reply_markup=buttons,
     )
 
