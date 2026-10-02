@@ -45,8 +45,22 @@ def _keyboard_to_raw(markup: InlineKeyboardMarkup):
     return rows
 
 
+def _has_style(markup: InlineKeyboardMarkup) -> bool:
+    if markup is None:
+        return False
+    return any(getattr(btn, "style", None) for row in markup.inline_keyboard for btn in row)
+
+
 async def send_styled(client: Client, chat_id: int, text: str, reply_markup: InlineKeyboardMarkup = None,
                        photo: str = None, message_effect_id: int = None):
+    if not _has_style(reply_markup):
+        kwargs = {"reply_markup": reply_markup}
+        if message_effect_id:
+            kwargs["message_effect_id"] = message_effect_id
+        if photo:
+            return await client.send_photo(chat_id, photo, caption=text, **kwargs)
+        return await client.send_message(chat_id, text, **kwargs)
+
     base_url = f"https://api.telegram.org/bot{BOT_TOKEN}"
     payload = {"chat_id": chat_id, "parse_mode": "HTML"}
     buttons_raw = _keyboard_to_raw(reply_markup)
@@ -83,6 +97,11 @@ async def send_styled(client: Client, chat_id: int, text: str, reply_markup: Inl
 
 async def edit_styled(client: Client, message: Message, text: str, reply_markup: InlineKeyboardMarkup = None):
     is_media = bool(message.photo or message.video or message.document)
+    if not _has_style(reply_markup):
+        if is_media:
+            return await message.edit_caption(text, reply_markup=reply_markup)
+        return await message.edit_text(text, reply_markup=reply_markup)
+
     base_url = f"https://api.telegram.org/bot{BOT_TOKEN}"
     payload = {"chat_id": message.chat.id, "message_id": message.id, "parse_mode": "HTML"}
     buttons_raw = _keyboard_to_raw(reply_markup)
@@ -117,4 +136,5 @@ async def safe_reply(message: Message, text: str):
     except Exception:
         logger.exception("reply with parse_mode failed, retrying as plain text")
         return await message.reply(text, parse_mode=ParseMode.DISABLED)
-                           
+
+        
