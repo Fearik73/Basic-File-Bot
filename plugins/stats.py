@@ -32,10 +32,10 @@ async def stats_export(client: Client, message: Message):
             fsub_display = "ɴᴏ ꜰ-ꜱᴜʙ ᴄʜᴀɴɴᴇʟ ᴀᴅᴅᴇᴅ"
 
         stats_text = (
-            "<blockquote><b>➲ <u>ꜱᴛᴀᴛɪꜱᴛɪᴄꜱ ꜰᴏʀ ʙᴏᴛ:</u></b>\n\n"
+            "<b>➲ <u>ꜱᴛᴀᴛɪꜱᴛɪᴄꜱ ꜰᴏʀ ʙᴏᴛ:</u></b>\n\n"
             f"ᴛᴏᴛᴀʟ ᴜꜱᴇʀꜱ ɪɴ ʙᴏᴛ: {users_count}\n\n"
             "<b>➲ <u>ꜰ-ꜱᴜʙ ᴄʜᴀɴɴᴇʟ ɴᴀᴍᴇ &amp; ɪᴅ:</u></b>\n\n"
-            f"{fsub_display}</blockquote>"
+            f"<blockquote>{fsub_display}</blockquote>"
         )
         await message.reply_text(stats_text, disable_web_page_preview=True)
 
