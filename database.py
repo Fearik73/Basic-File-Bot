@@ -3,14 +3,17 @@ import logging
 
 from pymongo import MongoClient
 
-from config import MONGO_URI, MONGO_DB_NAME, SHORT_URL, SHORT_API, SHORT_TUT
+from config import (
+    MONGO_URI, MONGO_DB_NAME, SHORT_URL, SHORT_API, SHORT_TUT,
+    USERS_COLLECTION, FSUB_COLLECTION, REQUEST_COLLECTION, SETTINGS_COLLECTION,
+)
 
 logger = logging.getLogger(__name__)
 
 client = MongoClient(MONGO_URI)
 db = client[MONGO_DB_NAME]
-users = db["users"]
-fsub_channels = db["FSub"]
+users = db[USERS_COLLECTION]
+fsub_channels = db[FSUB_COLLECTION]
 
 try:
     client.admin.command("ping")
@@ -84,7 +87,7 @@ async def remove_fsub_channel(channel_id: int):
 
 
 
-join_requests = db["JoinRequests"]
+join_requests = db[REQUEST_COLLECTION]
 
 
 def _add_join_request_sync(channel_id: int, user_id: int):
@@ -107,7 +110,7 @@ async def has_join_request(channel_id: int, user_id: int) -> bool:
     return await asyncio.to_thread(_has_join_request_sync, channel_id, user_id)
 
 
-bot_settings = db["Settings"]
+bot_settings = db[SETTINGS_COLLECTION]
 
 
 def _get_settings_sync() -> dict:
@@ -132,3 +135,4 @@ async def get_settings() -> dict:
 
 async def update_settings(data: dict):
     await asyncio.to_thread(_update_settings_sync, data)
+    
