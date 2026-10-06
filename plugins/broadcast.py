@@ -76,10 +76,8 @@ async def _run_broadcast(client: Client, status_msg: Message, broadcast_msg: Mes
                 logger.exception("Failed to broadcast to chat_id=%s after FloodWait", chat_id)
                 unsuccessful += 1
         except UserIsBlocked:
-            await del_user(chat_id)
             blocked += 1
         except (InputUserDeactivated, ChannelInvalid, PeerIdInvalid):
-            await del_user(chat_id)
             deleted += 1
         except Exception:
             logger.exception("Failed to broadcast to chat_id=%s", chat_id)
