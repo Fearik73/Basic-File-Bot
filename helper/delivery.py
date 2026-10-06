@@ -16,7 +16,7 @@ CHUNK_SIZE = 200
 async def get_messages_chunk(client: Client, message_ids: list):
     try:
         msgs = await client.get_messages(DB_CHANNEL_ID, message_ids=message_ids)
-        return [msg for msg in msgs if msg is not None]
+        return [msg for msg in msgs if msg is not None and not msg.empty]
     except FloodWait as e:
         logger.warning("FloodWait %ss while fetching %d message(s)", e.value, len(message_ids))
         await asyncio.sleep(e.value)
@@ -169,4 +169,4 @@ async def send_batch(client: Client, chat_id: int, first_id: int, last_id: int, 
 
     if any_sent:
         await _send_autodelete_notice(client, chat_id)
-        
+
