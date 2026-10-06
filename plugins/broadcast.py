@@ -7,16 +7,19 @@ from pyrogram.errors import FloodWait, UserIsBlocked, InputUserDeactivated, Chan
 from pyrogram.types import Message
 
 from config import ADMINS
-from database import full_userbase, del_user
+from database import full_userbase, full_userbase_range, total_users, del_user
 
 logger = logging.getLogger(__name__)
 
 PROGRESS_EDIT_INTERVAL = 4
 
 
-def _progress_text(done: int, total: int, successful: int, blocked: int, deleted: int, unsuccessful: int) -> str:
+def _progress_text(done: int, total: int, successful: int, blocked: int, deleted: int, unsuccessful: int, range_label: str = None) -> str:
+    head = "ʙʀᴏᴀᴅᴄᴀꜱᴛɪɴɢ ʀᴀɴɢᴇ..." if range_label else "ʙʀᴏᴀᴅᴄᴀꜱᴛɪɴɢ..."
+    rng = f"<b>ʀᴀɴɢᴇ :</b> {range_label}\n" if range_label else ""
     return (
-        "<blockquote><b>📢 ʙʀᴏᴀᴅᴄᴀꜱᴛɪɴɢ...</b></blockquote>\n"
+        f"<blockquote><b>📢 {head}</b></blockquote>\n"
+        + rng +
         f"<b>ᴘʀᴏᴄᴇꜱꜱᴇᴅ :</b> {done}/{total}\n"
         f"<b>ꜱᴜᴄᴄᴇꜱꜱꜰᴜʟ :</b> {successful}\n"
         f"<b>ʙʟᴏᴄᴋᴇᴅ :</b> {blocked}\n"
@@ -25,19 +28,24 @@ def _progress_text(done: int, total: int, successful: int, blocked: int, deleted
     )
 
 
-def _final_text(total: int, successful: int, blocked: int, deleted: int, unsuccessful: int) -> str:
+def _final_text(total: int, successful: int, blocked: int, deleted: int, unsuccessful: int, range_label: str = None, next_start: str = None) -> str:
+    rng = f"<b>ʀᴀɴɢᴇ :</b> {range_label}\n" if range_label else ""
+    nxt = f"\n<b>ɴᴇxᴛ ꜱᴛᴀʀᴛ :</b> {next_start}" if next_start else ""
     return (
         "<blockquote><b>ʙʀᴏᴀᴅᴄᴀꜱᴛ ᴄᴏᴍᴘʟᴇᴛᴇᴅ</b></blockquote>\n"
+        + rng +
         f"<b>ᴛᴏᴛᴀʟ ᴜꜱᴇʀꜱ :</b> {total}\n"
         f"<b>ꜱᴜᴄᴄᴇꜱꜱꜰᴜʟ :</b> {successful}\n"
         f"<b>ʙʟᴏᴄᴋᴇᴅ :</b> {blocked}\n"
         f"<b>ᴅᴇʟᴇᴛᴇᴅ :</b> {deleted}\n"
         f"<b>ᴜɴꜱᴜᴄᴄᴇꜱꜱꜰᴜʟ :</b> {unsuccessful}"
+        + nxt
     )
 
 
-async def _run_broadcast(client: Client, status_msg: Message, broadcast_msg: Message, pin: bool = False):
-    user_ids = await full_userbase()
+async def _run_broadcast(client: Client, status_msg: Message, broadcast_msg: Message, pin: bool = False, user_ids: list = None, range_label: str = None, next_start: str = None):
+    if user_ids is None:
+        user_ids = await full_userbase()
     total = len(user_ids)
     done = successful = blocked = deleted = unsuccessful = 0
     last_edit = 0.0
@@ -49,7 +57,7 @@ async def _run_broadcast(client: Client, status_msg: Message, broadcast_msg: Mes
             return
         last_edit = now
         try:
-            await status_msg.edit(_progress_text(done, total, successful, blocked, deleted, unsuccessful))
+            await status_msg.edit(_progress_text(done, total, successful, blocked, deleted, unsuccessful, range_label))
         except Exception:
             pass
 
@@ -88,7 +96,7 @@ async def _run_broadcast(client: Client, status_msg: Message, broadcast_msg: Mes
 
     await _update_progress(force=True)
     try:
-        await status_msg.edit(_final_text(total, successful, blocked, deleted, unsuccessful))
+        await status_msg.edit(_final_text(total, successful, blocked, deleted, unsuccessful, range_label, next_start))
     except Exception:
         logger.exception("Failed to send final broadcast status")
 
@@ -122,4 +130,33 @@ async def pin_broadcast_command(client: Client, message: Message):
 
     status_msg = await message.reply("<blockquote><i>Broadcasting message.. this will take some time</i></blockquote>")
     await _run_broadcast(client, status_msg, message.reply_to_message, pin=True)
+
+
+@Client.on_message(filters.private & filters.command("brange"))
+async def range_broadcast_command(client: Client, message: Message):
+    if message.from_user.id not in ADMINS:
+        return
+    try:
+        start, count = int(message.command[1]), int(message.command[2])
+    except (IndexError, ValueError):
+        return
+    if start < 1 or count < 1:
+        return
+    if not await _require_reply(message):
+        return
+
+    total_db = await total_users()
+    if start > total_db:
+        warn = await message.reply(f"<b>❗Start {start} is beyond total users ({total_db}).</b>")
+        await asyncio.sleep(8)
+        await warn.delete()
+        return
+
+    user_ids = await full_userbase_range(start, count)
+    end = start + len(user_ids) - 1
+    range_label = f"{start} → {end}"
+    next_start = str(end + 1) if end < total_db else "ᴇɴᴅ ᴏꜰ ʟɪꜱᴛ"
+
+    status_msg = await message.reply(f"<blockquote><i>Broadcasting range {range_label}.. this will take some time</i></blockquote>")
+    await _run_broadcast(client, status_msg, message.reply_to_message, pin=False, user_ids=user_ids, range_label=range_label, next_start=next_start)
     
