@@ -42,6 +42,11 @@ def _full_userbase_sync() -> list:
     return [doc["_id"] for doc in users.find()]
 
 
+def _userbase_range_sync(start: int, count: int) -> list:
+    cursor = users.find({}, {"_id": 1}).skip(start - 1).limit(count)
+    return [doc["_id"] for doc in cursor]
+
+
 def _total_users_sync() -> int:
     return users.count_documents({})
 
@@ -56,6 +61,10 @@ async def del_user(user_id: int):
 
 async def full_userbase() -> list:
     return await asyncio.to_thread(_full_userbase_sync)
+
+
+async def full_userbase_range(start: int, count: int) -> list:
+    return await asyncio.to_thread(_userbase_range_sync, start, count)
 
 
 async def total_users() -> int:
@@ -135,4 +144,4 @@ async def get_settings() -> dict:
 
 async def update_settings(data: dict):
     await asyncio.to_thread(_update_settings_sync, data)
-    
+
