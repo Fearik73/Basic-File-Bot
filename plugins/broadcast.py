@@ -3,7 +3,7 @@ import logging
 import time
 
 from pyrogram import Client, filters
-from pyrogram.errors import FloodWait, UserIsBlocked, InputUserDeactivated
+from pyrogram.errors import FloodWait, UserIsBlocked, InputUserDeactivated, ChannelInvalid, PeerIdInvalid
 from pyrogram.types import Message
 
 from config import ADMINS
@@ -78,7 +78,7 @@ async def _run_broadcast(client: Client, status_msg: Message, broadcast_msg: Mes
         except UserIsBlocked:
             await del_user(chat_id)
             blocked += 1
-        except InputUserDeactivated:
+        except (InputUserDeactivated, ChannelInvalid, PeerIdInvalid):
             await del_user(chat_id)
             deleted += 1
         except Exception:
@@ -124,3 +124,4 @@ async def pin_broadcast_command(client: Client, message: Message):
 
     status_msg = await message.reply("<blockquote><i>Broadcasting message.. this will take some time</i></blockquote>")
     await _run_broadcast(client, status_msg, message.reply_to_message, pin=True)
+    
