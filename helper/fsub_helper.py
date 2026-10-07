@@ -1,5 +1,7 @@
 import asyncio
+import html
 import logging
+import time
 from datetime import datetime, timedelta
 
 from pyrogram import Client
@@ -8,7 +10,10 @@ from pyrogram.enums import ChatMemberStatus
 from pyrogram.errors import UserNotParticipant
 
 from config import FSUB_MESSAGE, FSUB_PHOTO
-from database import add_fsub_channel, get_all_fsub_channels, remove_fsub_channel, has_join_request
+from database import (
+    add_fsub_channel, get_all_fsub_channels, remove_fsub_channel, has_join_request,
+    get_all_flinks, add_flink, remove_flink, has_flink_seen, mark_flink_seen,
+)
 from helper.styling import styled_button, send_styled, safe_reply
 
 logger = logging.getLogger(__name__)
@@ -54,13 +59,26 @@ async def ensure_fsub_loaded(client: Client):
             logger.info("Loaded %d Fsub channel(s)", len(client.fsub_dict))
         except Exception:
             logger.exception("Failed to load Fsub channels from MongoDB")
+        try:
+            client.flink_dict = await get_all_flinks()
+            logger.info("Loaded %d Link Fsub entr(ies)", len(client.flink_dict))
+        except Exception:
+            logger.exception("Failed to load Link Fsub from MongoDB")
         client._fsub_loaded = True
+
+
+def _ordered_entries(client: Client, include_links: bool) -> list:
+    entries = [("c", cid, data) for cid, data in client.fsub_dict.items()]
+    if include_links:
+        entries += [("l", lid, data) for lid, data in client.flink_dict.items()]
+    entries.sort(key=lambda e: e[2].get("added_at") or 0)
+    return entries
 
 
 def force_sub(func):
     async def wrapper(client: Client, message: Message):
         await ensure_fsub_loaded(client)
-        if not client.fsub_dict:
+        if not client.fsub_dict and not client.flink_dict:
             return await func(client, message)
 
         checking_msg = await safe_reply(message, "<b>Checking Subscription.....</b>")
@@ -85,7 +103,18 @@ def force_sub(func):
         real_statuses = [statuses.get(cid, False) for cid, data in client.fsub_dict.items() if not data.get("fake")]
         fake_statuses = [statuses.get(cid, False) for cid, data in client.fsub_dict.items() if data.get("fake")]
 
-        if all(real_statuses) and (not consider_fake or all(fake_statuses)):
+        pending_links = []
+        if consider_fake:
+            for lid, data in client.flink_dict.items():
+                if data.get("mode") == "once":
+                    try:
+                        if await has_flink_seen(lid, user_id):
+                            continue
+                    except Exception:
+                        logger.exception("Error checking link-fsub seen record for %s", lid)
+                pending_links.append(lid)
+
+        if all(real_statuses) and (not consider_fake or all(fake_statuses)) and not pending_links:
             try:
                 await checking_msg.delete()
             except Exception:
@@ -94,31 +123,33 @@ def force_sub(func):
                 message.command = [message.command[0], original_payload] if original_payload else [message.command[0]]
             return await func(client, message)
 
+        entries = [
+            e for e in _ordered_entries(client, consider_fake)
+            if not (e[0] == "c" and e[2].get("fake") and not consider_fake)
+        ]
+
         buttons_raw = []
-        idx = 0
+        for rank, (kind, key, data) in enumerate(entries, start=1):
+            if kind == "l":
+                if key not in pending_links:
+                    continue
+                link = data.get("link")
+            else:
+                if statuses.get(key, False):
+                    continue
+                link = data.get("link")
+                if data.get("timer", 0) > 0:
+                    try:
+                        invite = await client.create_chat_invite_link(
+                            key,
+                            expire_date=datetime.now() + timedelta(minutes=data["timer"]),
+                            creates_join_request=data.get("request", False),
+                        )
+                        link = invite.invite_link
+                    except Exception:
+                        logger.exception("Error creating invite link for channel_id=%s", key)
 
-        for channel_id, data in client.fsub_dict.items():
-            if data.get("fake") and not consider_fake:
-                continue
-
-            joined = statuses.get(channel_id, False)
-            if joined:
-                continue
-
-            link = data.get("link")
-            if data.get("timer", 0) > 0:
-                try:
-                    invite = await client.create_chat_invite_link(
-                        channel_id,
-                        expire_date=datetime.now() + timedelta(minutes=data["timer"]),
-                        creates_join_request=data.get("request", False),
-                    )
-                    link = invite.invite_link
-                except Exception:
-                    logger.exception("Error creating invite link for channel_id=%s", channel_id)
-
-            idx += 1
-            buttons_raw.append({"text": f"Channel {idx:02d}", "url": link, "style": "primary"})
+            buttons_raw.append({"text": f"Channel {rank:02d}", "url": link, "style": "primary"})
 
         try_again_payload = f"retry_{original_payload}" if original_payload else "retry"
         try_again_link = f"https://t.me/{client.me.username}?start={try_again_payload}"
@@ -142,12 +173,91 @@ def force_sub(func):
             photo=FSUB_PHOTO or None,
         )
 
+        for lid in pending_links:
+            if client.flink_dict.get(lid, {}).get("mode") == "once":
+                try:
+                    await mark_flink_seen(lid, user_id)
+                except Exception:
+                    logger.exception("Failed to mark link-fsub seen for %s", lid)
+
     return wrapper
+
+
+def _find_flink(client: Client, raw: str):
+    key = raw.strip()
+    if key.upper() in client.flink_dict:
+        return key.upper()
+    for lid, data in client.flink_dict.items():
+        if data.get("link") == key:
+            return lid
+    return None
+
+
+async def process_flink_add(client: Client, args: list) -> str:
+    if not args or len(args) > 2:
+        return "<b>Invalid format</b>"
+
+    link = args[0]
+    mode = args[1].lower() if len(args) == 2 else "always"
+
+    if not link.lower().startswith(("http://", "https://")):
+        return "<b>Invalid link</b>"
+    if mode not in ("always", "once"):
+        return "<b>Mode must be 'always' or 'once'</b>"
+
+    existing = _find_flink(client, link)
+    if existing:
+        lid = existing
+        data = {k: v for k, v in client.flink_dict[lid].items() if k != "_id"}
+        data["mode"] = mode
+    else:
+        nums = [int(k[1:]) for k in client.flink_dict if k[1:].isdigit()]
+        lid = f"L{max(nums, default=0) + 1}"
+        data = {"type": "link", "link": link, "mode": mode, "added_at": time.time()}
+
+    try:
+        await add_flink(lid, data)
+    except Exception:
+        logger.exception("Failed to save link fsub %s to MongoDB", lid)
+
+    client.flink_dict[lid] = data
+
+    return (
+        "<b>✅ ʟɪɴᴋ ꜰ-ꜱᴜʙ ᴀᴅᴅᴇᴅ</b>\n\n"
+        f"<b>ɪᴅ:</b> <code>{lid}</code>\n"
+        f"<b>ʟɪɴᴋ:</b> <code>{html.escape(link, quote=False)}</code>\n"
+        f"<b>ᴍᴏᴅᴇ:</b> {mode.capitalize()}"
+    )
+
+
+async def process_flink_remove(client: Client, lid: str) -> str:
+    try:
+        await remove_flink(lid)
+    except Exception:
+        logger.exception("Failed to remove link fsub %s from MongoDB", lid)
+
+    client.flink_dict.pop(lid, None)
+    return f"<b>✅ ʟɪɴᴋ ꜰ-ꜱᴜʙ ʀᴇᴍᴏᴠᴇᴅ:</b> <code>{lid}</code>"
+
+
+def flink_lines(client: Client) -> list:
+    lines = []
+    for idx, (lid, data) in enumerate(client.flink_dict.items(), start=1):
+        link = data.get("link", "")
+        short = link if len(link) <= 45 else link[:42] + "..."
+        lines.append(
+            f"{idx}. <code>{lid}</code> ({str(data.get('mode', 'always')).capitalize()})\n"
+            f"<code>{html.escape(short, quote=False)}</code>"
+        )
+    return lines
 
 
 async def process_fsub_add(client: Client, args: list) -> str:
     if not args:
         return "<b>Invalid format</b>"
+
+    if args[0].lower().startswith(("http://", "https://")):
+        return await process_flink_add(client, args)
 
     fake = args[-1].lower() == "x"
     if fake:
@@ -194,6 +304,11 @@ async def process_fsub_add(client: Client, args: list) -> str:
             return f"<b>Error creating invite link:</b> <code>{e}</code>"
 
     data = {"name": chat.title, "link": link, "request": request, "timer": timer, "fake": fake}
+    old = client.fsub_dict.get(channel_id)
+    if old is None:
+        data["added_at"] = time.time()
+    elif old.get("added_at"):
+        data["added_at"] = old["added_at"]
 
     try:
         await add_fsub_channel(channel_id, data)
@@ -213,6 +328,10 @@ async def process_fsub_add(client: Client, args: list) -> str:
 
 
 async def process_fsub_remove(client: Client, channel_id_raw: str) -> str:
+    lid = _find_flink(client, channel_id_raw)
+    if lid:
+        return await process_flink_remove(client, lid)
+
     try:
         channel_id = int(channel_id_raw.strip())
     except ValueError:
@@ -235,4 +354,5 @@ async def process_fsub_remove(client: Client, channel_id_raw: str) -> str:
         f"<b>ᴄʜᴀɴɴᴇʟ:</b> {name}\n"
         f"<b>ɪᴅ:</b> <code>{channel_id}</code>"
     )
+
     
