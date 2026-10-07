@@ -76,7 +76,7 @@ def _add_fsub_channel_sync(channel_id: int, data: dict):
 
 
 def _get_all_fsub_channels_sync() -> dict:
-    return {doc["_id"]: doc for doc in fsub_channels.find()}
+    return {doc["_id"]: doc for doc in fsub_channels.find({"type": {"$ne": "link"}})}
 
 
 async def add_fsub_channel(channel_id: int, data: dict):
@@ -145,3 +145,48 @@ async def get_settings() -> dict:
 async def update_settings(data: dict):
     await asyncio.to_thread(_update_settings_sync, data)
 
+
+def _get_all_flinks_sync() -> dict:
+    return {doc["_id"]: doc for doc in fsub_channels.find({"type": "link"}).sort("added_at", 1)}
+
+
+def _add_flink_sync(link_id: str, data: dict):
+    fsub_channels.update_one({"_id": link_id}, {"$set": data}, upsert=True)
+
+
+def _remove_flink_sync(link_id: str):
+    fsub_channels.delete_one({"_id": link_id})
+    join_requests.delete_many({"channel_id": link_id})
+
+
+def _has_flink_seen_sync(link_id: str, user_id: int) -> bool:
+    return join_requests.find_one({"_id": f"{link_id}:{user_id}"}) is not None
+
+
+def _mark_flink_seen_sync(link_id: str, user_id: int):
+    join_requests.update_one(
+        {"_id": f"{link_id}:{user_id}"},
+        {"$set": {"channel_id": link_id, "user_id": user_id}},
+        upsert=True,
+    )
+
+
+async def get_all_flinks() -> dict:
+    return await asyncio.to_thread(_get_all_flinks_sync)
+
+
+async def add_flink(link_id: str, data: dict):
+    await asyncio.to_thread(_add_flink_sync, link_id, data)
+
+
+async def remove_flink(link_id: str):
+    await asyncio.to_thread(_remove_flink_sync, link_id)
+
+
+async def has_flink_seen(link_id: str, user_id: int) -> bool:
+    return await asyncio.to_thread(_has_flink_seen_sync, link_id, user_id)
+
+
+async def mark_flink_seen(link_id: str, user_id: int):
+    await asyncio.to_thread(_mark_flink_seen_sync, link_id, user_id)
+    
