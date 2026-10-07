@@ -9,7 +9,7 @@ from database import update_settings
 from helper.styling import styled_button, send_styled, edit_styled
 from helper.delivery import format_duration
 from helper.settings_store import ensure_settings_loaded
-from helper.fsub_helper import ensure_fsub_loaded, process_fsub_add, process_fsub_remove
+from helper.fsub_helper import ensure_fsub_loaded, process_fsub_add, process_fsub_remove, flink_lines
 
 logger = logging.getLogger(__name__)
 
@@ -48,7 +48,7 @@ def build_main_settings_panel(client: Client):
         "──────────────────\n"
         f"<blockquote><b>▸ ᴘʀᴏᴛᴇᴄᴛ ᴄᴏɴᴛᴇɴᴛ:</b> {protect}\n"
         f"<b>▸ ᴀᴜᴛᴏ ᴅᴇʟᴇᴛᴇ ᴛɪᴍᴇʀ:</b> {auto_delete_display}\n"
-        f"<b>▸ ꜰᴏʀᴄᴇ-ꜱᴜʙ ᴄʜᴀɴɴᴇʟꜱ:</b> {len(client.fsub_dict)}\n"
+        f"<b>▸ ꜰᴏʀᴄᴇ-ꜱᴜʙ ᴄʜᴀɴɴᴇʟꜱ:</b> {len(client.fsub_dict) + len(client.flink_dict)}\n"
         f"<b>▸ ꜱʜᴏʀᴛɴᴇʀ:</b> {shortner}</blockquote>"
     )
     markup = InlineKeyboardMarkup([
@@ -89,7 +89,8 @@ def build_fsub_panel(client: Client):
         "<b>➲ ꜰᴏʀᴄᴇ-ꜱᴜʙ ᴄʜᴀɴɴᴇʟꜱ</b>\n"
         "──────────────────\n\n"
         "<b>☰ ʀᴇᴀʟ ꜰꜱᴜʙ ᴄʜᴀɴɴᴇʟ ʟɪꜱᴛ:</b>\n" + ("\n".join(real) if real else "_No Channel added yet_") + "\n\n"
-        "<b>☰ ꜰᴀᴋᴇ ꜰꜱᴜʙ ᴄʜᴀɴɴᴇʟ ʟɪꜱᴛ:</b>\n" + ("\n".join(fake) if fake else "_No Channel added yet_")
+        "<b>☰ ꜰᴀᴋᴇ ꜰꜱᴜʙ ᴄʜᴀɴɴᴇʟ ʟɪꜱᴛ:</b>\n" + ("\n".join(fake) if fake else "_No Channel added yet_") + "\n\n"
+        "<b>☰ ʟɪɴᴋ ꜰꜱᴜʙ ʟɪꜱᴛ:</b>\n" + ("\n".join(flink_lines(client)) if client.flink_dict else "_No Link added yet_")
     )
     markup = InlineKeyboardMarkup([
         [
@@ -216,6 +217,7 @@ async def settings_fsub_add(client: Client, query: CallbackQuery):
         "ꜰɪʀꜱᴛ ꜱᴇɴᴅ ᴍᴇ ᴛʜᴇ ᴄʜᴀɴɴᴇʟ ᴅᴀᴛᴀ ɪɴ ᴛʜɪꜱ ꜰᴏʀᴍᴀᴛ:\n\n"
         "» {channel_id} yes/no Timer\n\n"
         "ᴀᴅᴅ X ᴀꜰᴛᴇʀ ᴛʜᴇ ᴛɪᴍᴇʀ ᴛᴏ ᴍᴀᴋᴇ ɪᴛ ᴀ ꜰᴀᴋᴇ ꜰꜱᴜʙ ᴄʜᴀɴɴᴇʟ\n\n"
+        "ʟɪɴᴋ ᴏɴʟʏ: » {link} always/once\n\n"
         "<blockquote expandable><b><i>_ʜᴇʀᴇ ʏᴇꜱ ᴍᴇᴀɴꜱ ʀᴇQᴜᴇꜱᴛ ᴍᴏᴅᴇ ᴀɴᴅ ɴᴏ ᴍᴇᴀɴꜱ ᴅɪʀᴄᴛ ᴍᴏᴅᴇ."
         "ɪɴ ʀᴇQᴜᴇꜱᴛ ᴍᴏᴅᴇ ᴜꜱᴇʀ ꜱᴇɴᴅ ʀᴇQᴜᴇꜱᴛ ɪɴ ꜰꜱᴜʙ ᴄʜᴀɴɴᴇʟ ʙᴜᴛ ɪɴ ᴅɪʀᴄᴛ ᴍᴏᴅᴇ ᴛʜᴇʏ ᴀʀᴇ ᴀʟʟᴏᴡᴇᴅ ᴛᴏ ᴊᴏɪɴ ᴄʜᴀɴɴᴇʟ ᴅɪʀᴇᴄᴛʟʏ."
         "ᴀɴᴅ ᴛɪᴍᴇʀ ɪꜱ ᴜꜱᴇ ᴛᴏ ɢᴇɴᴇʀᴀᴛᴇ ᴀᴄᴄᴇꜱꜱɪʙʟᴇ ʟɪɴᴋ ꜰᴏʀ ᴛʜᴀᴛ ᴘᴀʀᴛɪᴄᴜʟᴀʀ ᴛɪᴍᴇ ᴘᴇʀɪᴏᴅ, ᴀꜰᴛᴇʀ ᴛʜᴀᴛ ʟɪɴᴋ ᴡɪʟʟ ᴇxᴘɪʀᴇ ᴀᴜᴛᴏᴍᴀᴛɪᴄᴀʟʟʏ,"
@@ -257,3 +259,4 @@ async def settings_fsub_remove(client: Client, query: CallbackQuery):
 
     markup = InlineKeyboardMarkup([[styled_button("◂ ʙᴀᴄᴋ", callback_data="set_menu_fsub", style="danger")]])
     await edit_styled(client, query.message, text, reply_markup=markup)
+    
