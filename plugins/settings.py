@@ -37,7 +37,6 @@ async def _settings_input_interceptor(client: Client, message: Message):
         message.stop_propagation()
 
 
-# Settings panel builders
 def build_main_settings_panel(client: Client):
     protect = "ON" if client.settings.get("protect_content") else "OFF"
     auto_delete = client.settings.get("auto_delete", 0)
@@ -90,7 +89,7 @@ def build_fsub_panel(client: Client):
         "──────────────────\n\n"
         "<b>☰ ʀᴇᴀʟ ꜰꜱᴜʙ ᴄʜᴀɴɴᴇʟ ʟɪꜱᴛ:</b>\n" + ("\n".join(real) if real else "_No Channel added yet_") + "\n\n"
         "<b>☰ ꜰᴀᴋᴇ ꜰꜱᴜʙ ᴄʜᴀɴɴᴇʟ ʟɪꜱᴛ:</b>\n" + ("\n".join(fake) if fake else "_No Channel added yet_") + "\n\n"
-        "<b>☰ ʟɪɴᴋ ꜰꜱᴜʙ ʟɪꜱᴛ:</b>\n" + ("\n".join(flink_lines(client)) if client.flink_dict else "_No Link added yet_")
+        "<b>☰ ʟɪɴᴋ ꜰꜱᴜʙ ʟɪꜱᴛ:</b>\n" + ("\n\n".join(flink_lines(client)) if client.flink_dict else "_No Link added yet_")
     )
     markup = InlineKeyboardMarkup([
         [
