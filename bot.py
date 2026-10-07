@@ -29,7 +29,7 @@ app.start_time = time.time()
 async def main():
     await app.start()
     me = await app.get_me()
-    logger.info("✅ Bot running as @%s", me.username)
+    logger.info("✅ Bot started successfully — running as @%s", me.username)
     await idle()
     await app.stop()
 
