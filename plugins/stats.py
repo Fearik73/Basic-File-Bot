@@ -27,7 +27,7 @@ async def stats_export(client: Client, message: Message):
                 name = data.get("name", "Unknown")
                 mode = "ʀᴇQᴜᴇꜱᴛ" if data.get("request") else "ᴅɪʀᴇᴄᴛ"
                 channel_lines.append(
-                    f"{index}.\n<b>ɴᴀᴍᴇ</b> - {name}\n<b>ᴄʜᴀɴɴᴇʟ ɪᴅ</b> - <code>{channel_id}</code>\n<b>ᴍᴏᴅᴇ</b> - {mode}"
+                    f"{index}.\n<b>▸ ɴᴀᴍᴇ</b> - {name}\n<b>▸ ᴄʜᴀɴɴᴇʟ ɪᴅ</b> - <code>{channel_id}</code>\n<b>▸ ᴍᴏᴅᴇ</b> - {mode}"
                 )
             fsub_display = "\n\n".join(channel_lines)
         else:
