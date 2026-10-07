@@ -7,6 +7,7 @@ from pyrogram.types import Message
 
 from config import ADMINS
 from database import full_userbase, total_users
+from helper.fsub_helper import flink_lines
 
 logger = logging.getLogger(__name__)
 
@@ -30,6 +31,10 @@ async def stats_export(client: Client, message: Message):
             fsub_display = "\n\n".join(channel_lines)
         else:
             fsub_display = "ɴᴏ ꜰ-ꜱᴜʙ ᴄʜᴀɴɴᴇʟ ᴀᴅᴅᴇᴅ"
+
+        links = flink_lines(client)
+        if links:
+            fsub_display += "\n\n<b>ʟɪɴᴋ ꜰ-ꜱᴜʙ</b>\n\n" + "\n\n".join(links)
 
         stats_text = (
             "<b>➲ <u>ꜱᴛᴀᴛɪꜱᴛɪᴄꜱ ꜰᴏʀ ʙᴏᴛ:</u></b>\n\n"
@@ -56,4 +61,4 @@ async def stats_export(client: Client, message: Message):
     except Exception as e:
         logger.exception("Error in /stats export")
         return await message.reply(f"✗ <b>Error:</b> <code>{e}</code>")
-        
+
