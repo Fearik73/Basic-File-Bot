@@ -51,20 +51,28 @@ _fsub_load_lock = asyncio.Lock()
 async def ensure_fsub_loaded(client: Client):
     if getattr(client, "_fsub_loaded", False):
         return
+    if time.monotonic() < getattr(client, "_fsub_retry_after", 0):
+        return
     async with _fsub_load_lock:
         if getattr(client, "_fsub_loaded", False):
             return
+        ok = True
         try:
             client.fsub_dict = await get_all_fsub_channels()
             logger.info("Loaded %d Fsub channel(s)", len(client.fsub_dict))
         except Exception:
+            ok = False
             logger.exception("Failed to load Fsub channels from MongoDB")
         try:
             client.flink_dict = await get_all_flinks()
             logger.info("Loaded %d Link Fsub entr(ies)", len(client.flink_dict))
         except Exception:
+            ok = False
             logger.exception("Failed to load Link Fsub from MongoDB")
-        client._fsub_loaded = True
+        if ok:
+            client._fsub_loaded = True
+        else:
+            client._fsub_retry_after = time.monotonic() + 30
 
 
 def _ordered_entries(client: Client, include_links: bool) -> list:
