@@ -235,7 +235,7 @@ async def process_flink_add(client: Client, args: list) -> str:
     return (
         "<b>✅ ʟɪɴᴋ ꜰ-ꜱᴜʙ ᴀᴅᴅᴇᴅ</b>\n\n"
         f"<b>▸ ɪᴅ:</b> <code>{lid}</code>\n"
-        f"<b>▸ ᴍᴏᴅᴇ:</b> {mode.capitalize()}"
+        f"<b>▸ ᴍᴏᴅᴇ:</b> {mode.capitalize()}\n"
         f"<b>▸ ʟɪɴᴋ:</b> <code>{html.escape(link, quote=False)}</code>"
     )
 
