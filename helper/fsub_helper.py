@@ -252,11 +252,12 @@ async def process_flink_remove(client: Client, lid: str) -> str:
 
 def flink_lines(client: Client) -> list:
     lines = []
-    for idx, (lid, data) in enumerate(client.flink_dict.items(), start=1):
+    for lid, data in client.flink_dict.items():
         link = data.get("link", "")
         lines.append(
-            f"{idx}. <code>{lid}</code> ({str(data.get('mode', 'always')).capitalize()})\n"
-            f"<code>{html.escape(link, quote=False)}</code>"
+            f"ʟɪɴᴋ_ɪᴅ - {lid}\n"
+            f"ᴍᴏᴅᴇ - {str(data.get('mode', 'always')).capitalize()}\n"
+            f"ʟɪɴᴋ - <code>{html.escape(link, quote=False)}</code>"
         )
     return lines
 
