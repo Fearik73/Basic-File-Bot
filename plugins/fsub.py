@@ -37,7 +37,7 @@ async def ffsub_command(client: Client, message: Message):
         return
     await ensure_fsub_loaded(client)
     if len(message.command) < 2:
-        return await message.reply("<b>Usage:</b> <code>/ffsub link always|once</code>")
+        return
     result = await process_flink_add(client, message.command[1:])
     await message.reply(result)
 
@@ -94,4 +94,5 @@ async def fsub_remove(client: Client, message: Message):
     await ensure_fsub_loaded(client)
     result = await process_fsub_remove(client, message.command[1])
     await message.reply(result)
+
     
