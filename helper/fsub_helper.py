@@ -234,9 +234,9 @@ async def process_flink_add(client: Client, args: list) -> str:
 
     return (
         "<b>✅ ʟɪɴᴋ ꜰ-ꜱᴜʙ ᴀᴅᴅᴇᴅ</b>\n\n"
-        f"<b>ɪᴅ:</b> <code>{lid}</code>\n"
-        f"<b>ʟɪɴᴋ:</b> <code>{html.escape(link, quote=False)}</code>\n"
-        f"<b>ᴍᴏᴅᴇ:</b> {mode.capitalize()}"
+        f"<b>▸ ɪᴅ:</b> <code>{lid}</code>\n"
+        f"<b>▸ ᴍᴏᴅᴇ:</b> {mode.capitalize()}"
+        f"<b>▸ ʟɪɴᴋ:</b> <code>{html.escape(link, quote=False)}</code>"
     )
 
 
@@ -250,15 +250,16 @@ async def process_flink_remove(client: Client, lid: str) -> str:
     return f"<b>✅ ʟɪɴᴋ ꜰ-ꜱᴜʙ ʀᴇᴍᴏᴠᴇᴅ:</b> <code>{lid}</code>"
 
 
-def flink_lines(client: Client) -> list:
+def flink_lines(client: Client, numbered: bool = False) -> list:
     lines = []
-    for lid, data in client.flink_dict.items():
+    for idx, (lid, data) in enumerate(client.flink_dict.items(), start=1):
         link = data.get("link", "")
-        lines.append(
-            f"ʟɪɴᴋ_ɪᴅ - {lid}\n"
-            f"ᴍᴏᴅᴇ - {str(data.get('mode', 'always')).capitalize()}\n"
-            f"ʟɪɴᴋ - <code>{html.escape(link, quote=False)}</code>"
+        body = (
+            f"▸ ʟɪɴᴋ_ɪᴅ - {lid}\n"
+            f"▸ ᴍᴏᴅᴇ - {str(data.get('mode', 'always')).capitalize()}\n"
+            f"▸ ʟɪɴᴋ - <code>{html.escape(link, quote=False)}</code>"
         )
+        lines.append(f"{idx}.\n{body}" if numbered else body)
     return lines
 
 
@@ -288,7 +289,7 @@ async def process_fsub_add(client: Client, args: list) -> str:
     elif mode == "no":
         request = False
     else:
-        return "<b>Mode must be 'yes' or 'no'</b>"
+        return "<b>Mode must be yes or no</b>"
 
     if not timer_raw.isdigit():
         return "<b>Timer must be a non-negative integer</b>"
@@ -360,7 +361,7 @@ async def process_fsub_remove(client: Client, channel_id_raw: str) -> str:
     client.fsub_dict.pop(channel_id, None)
 
     return (
-        "<b>✅ ꜰ-ꜱᴜʙ ᴄʜᴀɴɴᴇʟ ʀᴇᴍᴏᴠᴇᴅ</b>\n\n"
+        "<b>✅ ꜰ-ꜱᴜʙ ʀᴇᴍᴏᴠᴇᴅ</b>\n\n"
         f"<b>ᴄʜᴀɴɴᴇʟ:</b> {name}\n"
         f"<b>ɪᴅ:</b> <code>{channel_id}</code>"
     )
