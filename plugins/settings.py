@@ -89,7 +89,7 @@ def build_fsub_panel(client: Client):
         "──────────────────\n\n"
         "<b>☰ ʀᴇᴀʟ ꜰꜱᴜʙ ᴄʜᴀɴɴᴇʟ ʟɪꜱᴛ:</b>\n" + ("\n".join(real) if real else "_No Channel added yet_") + "\n\n"
         "<b>☰ ꜰᴀᴋᴇ ꜰꜱᴜʙ ᴄʜᴀɴɴᴇʟ ʟɪꜱᴛ:</b>\n" + ("\n".join(fake) if fake else "_No Channel added yet_") + "\n\n"
-        "<b>☰ ʟɪɴᴋ ꜰꜱᴜʙ ʟɪꜱᴛ:</b>\n" + ("\n\n".join(flink_lines(client)) if client.flink_dict else "_No Link added yet_")
+        "<b>☰ ʟɪɴᴋ ꜰꜱᴜʙ ʟɪꜱᴛ:</b>\n" + ("<blockquote expandable>" + "\n\n".join(flink_lines(client)) + "</blockquote>" if client.flink_dict else "_No Link added yet_")
     )
     markup = InlineKeyboardMarkup([
         [
@@ -218,7 +218,7 @@ async def settings_fsub_add(client: Client, query: CallbackQuery):
         "ᴀᴅᴅ X ᴀꜰᴛᴇʀ ᴛʜᴇ ᴛɪᴍᴇʀ ᴛᴏ ᴍᴀᴋᴇ ɪᴛ ᴀ ꜰᴀᴋᴇ ꜰꜱᴜʙ ᴄʜᴀɴɴᴇʟ\n\n"
         "ʟɪɴᴋ ᴏɴʟʏ: » {link} always/once\n\n"
         "<blockquote expandable><b><i>_ʜᴇʀᴇ ʏᴇꜱ ᴍᴇᴀɴꜱ ʀᴇQᴜᴇꜱᴛ ᴍᴏᴅᴇ ᴀɴᴅ ɴᴏ ᴍᴇᴀɴꜱ ᴅɪʀᴄᴛ ᴍᴏᴅᴇ."
-        "ɪɴ ʀᴇQᴜᴇꜱᴛ ᴍᴏᴅᴇ ᴜꜱᴇʀ ꜱᴇɴᴅ ʀᴇQᴜᴇꜱᴛ ɪɴ ꜰꜱᴜʙ ᴄʜᴀɴɴᴇʟ ʙᴜᴛ ɪɴ ᴅɪʀᴄᴛ ᴍᴏᴅᴇ ᴛʜᴇʏ ᴀʀᴇ ᴀʟʟᴏᴡᴇᴅ ᴛᴏ ᴊᴏɪɴ ᴄʜᴀɴɴᴇʟ ᴅɪʀᴇᴄᴛʟʏ."
+        " ɪɴ ʀᴇQᴜᴇꜱᴛ ᴍᴏᴅᴇ ᴜꜱᴇʀ ꜱᴇɴᴅ ʀᴇQᴜᴇꜱᴛ ɪɴ ꜰꜱᴜʙ ᴄʜᴀɴɴᴇʟ ʙᴜᴛ ɪɴ ᴅɪʀᴄᴛ ᴍᴏᴅᴇ ᴛʜᴇʏ ᴀʀᴇ ᴀʟʟᴏᴡᴇᴅ ᴛᴏ ᴊᴏɪɴ ᴄʜᴀɴɴᴇʟ ᴅɪʀᴇᴄᴛʟʏ."
         "ᴀɴᴅ ᴛɪᴍᴇʀ ɪꜱ ᴜꜱᴇ ᴛᴏ ɢᴇɴᴇʀᴀᴛᴇ ᴀᴄᴄᴇꜱꜱɪʙʟᴇ ʟɪɴᴋ ꜰᴏʀ ᴛʜᴀᴛ ᴘᴀʀᴛɪᴄᴜʟᴀʀ ᴛɪᴍᴇ ᴘᴇʀɪᴏᴅ, ᴀꜰᴛᴇʀ ᴛʜᴀᴛ ʟɪɴᴋ ᴡɪʟʟ ᴇxᴘɪʀᴇ ᴀᴜᴛᴏᴍᴀᴛɪᴄᴀʟʟʏ,"
         "ᴛᴏ ᴋᴇᴇᴘ ʟɪɴᴋ ɴᴏɴ ᴇxᴘɪʀʏ ʏᴏᴜ ᴄᴀɴ ᴘᴜᴛ 0 ᴀꜱ ᴛɪᴍᴇʀ ᴠᴀʟᴜᴇ_</i></b></blockquote>",
     )
