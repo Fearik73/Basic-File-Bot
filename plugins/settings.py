@@ -89,7 +89,7 @@ def build_fsub_panel(client: Client):
         "──────────────────\n\n"
         "<b>☰ ʀᴇᴀʟ ꜰꜱᴜʙ ᴄʜᴀɴɴᴇʟ ʟɪꜱᴛ:</b>\n" + ("\n".join(real) if real else "_No Channel added yet_") + "\n\n"
         "<b>☰ ꜰᴀᴋᴇ ꜰꜱᴜʙ ᴄʜᴀɴɴᴇʟ ʟɪꜱᴛ:</b>\n" + ("\n".join(fake) if fake else "_No Channel added yet_") + "\n\n"
-        "<b>☰ ʟɪɴᴋ ꜰꜱᴜʙ ʟɪꜱᴛ:</b>\n" + ("<blockquote expandable>" + "\n\n".join(flink_lines(client)) + "</blockquote>" if client.flink_dict else "_No Link added yet_")
+        "<b>☰ ʟɪɴᴋ ꜰꜱᴜʙ ʟɪꜱᴛ:</b>\n" + ("<blockquote>" + "\n\n".join(flink_lines(client)) + "</blockquote>" if client.flink_dict else "_No Link added yet_")
     )
     markup = InlineKeyboardMarkup([
         [
