@@ -247,7 +247,7 @@ async def process_flink_remove(client: Client, lid: str) -> str:
         logger.exception("Failed to remove link fsub %s from MongoDB", lid)
 
     client.flink_dict.pop(lid, None)
-    return f"<b>✅ ʟɪɴᴋ ꜰ-ꜱᴜʙ ʀᴇᴍᴏᴠᴇᴅ:</b> <code>{lid}</code>"
+    return f"<b>✅ Link F-Sub Removed:</b> {lid}"
 
 
 def flink_lines(client: Client, numbered: bool = False) -> list:
