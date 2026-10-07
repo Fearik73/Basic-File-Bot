@@ -7,7 +7,7 @@ from pyrogram.types import Message
 
 from config import ADMINS
 from database import full_userbase, total_users
-from helper.fsub_helper import flink_lines
+from helper.fsub_helper import ensure_fsub_loaded, flink_lines
 
 logger = logging.getLogger(__name__)
 
@@ -18,6 +18,7 @@ async def stats_export(client: Client, message: Message):
         return
 
     try:
+        await ensure_fsub_loaded(client)
         users_count = await total_users()
 
         if client.fsub_dict:
@@ -32,16 +33,19 @@ async def stats_export(client: Client, message: Message):
         else:
             fsub_display = "ɴᴏ ꜰ-ꜱᴜʙ ᴄʜᴀɴɴᴇʟ ᴀᴅᴅᴇᴅ"
 
-        links = flink_lines(client)
-        if links:
-            fsub_display += "\n\n<b>ʟɪɴᴋ ꜰ-ꜱᴜʙ</b>\n\n" + "\n\n".join(links)
-
         stats_text = (
             "<b>➲ <u>ꜱᴛᴀᴛɪꜱᴛɪᴄꜱ ꜰᴏʀ ʙᴏᴛ:</u></b>\n\n"
             f"ᴛᴏᴛᴀʟ ᴜꜱᴇʀꜱ ɪɴ ʙᴏᴛ: {users_count}\n\n"
             "<b>➲ <u>ꜰ-ꜱᴜʙ ᴄʜᴀɴɴᴇʟ ɴᴀᴍᴇ &amp; ɪᴅ:</u></b>\n\n"
             f"<blockquote>{fsub_display}</blockquote>"
         )
+        links = flink_lines(client, numbered=True)
+        if links:
+            links_display = "\n\n".join(links)
+            stats_text += (
+                "\n\n<b>➲ <u>ʟɪɴᴋ ꜰ-ꜱᴜʙ:</u></b>\n\n"
+                f"<blockquote>{links_display}</blockquote>"
+            )
         await message.reply_text(stats_text, disable_web_page_preview=True)
 
         export_notice = await message.reply("<b>Exporting userdata...</b>")
