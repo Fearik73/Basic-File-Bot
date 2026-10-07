@@ -97,7 +97,7 @@ async def start_handler(client: Client, message: Message):
             last_id = int(parts[2])
         except ValueError:
             return
-        status_msg = None if client.fsub_dict else await safe_reply(message, "<b>Collecting Files.....</b>")
+        status_msg = None if (client.fsub_dict or client.flink_dict) else await safe_reply(message, "<b>Collecting Files.....</b>")
         await send_batch(client, message.chat.id, first_id, last_id, status_msg)
 
     elif payload_lower.startswith("single_") and len(parts) >= 3:
@@ -105,7 +105,7 @@ async def start_handler(client: Client, message: Message):
             message_id = int(parts[-1])
         except ValueError:
             return
-        status_msg = None if client.fsub_dict else await safe_reply(message, "<b>Collecting Files.....</b>")
+        status_msg = None if (client.fsub_dict or client.flink_dict) else await safe_reply(message, "<b>Collecting Files.....</b>")
         await deliver(client, message.chat.id, message_id, status_msg)
 
 
