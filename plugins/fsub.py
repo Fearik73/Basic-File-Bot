@@ -75,11 +75,11 @@ async def fsub_status(client: Client, message: Message):
                 f"{idx}. <b>{data.get('name')}</b> — <code>{channel_id}</code>\n"
                 f"<b>▸ ᴛʏᴘᴇ:</b> {kind}\n<b>▸ ᴍᴏᴅᴇ:</b> {mode}\n<b>▸ ᴇxᴘɪʀʏ:</b> {expiry}"
             )
-        text += "<b>⧉ <u>ꜰᴏʀᴄᴇ-ꜱᴜʙ ᴄʜᴀɴɴᴇʟꜱ</u>:</b>\n\n" + "\n\n".join(lines)
+        text += "<b>⧉ <u>ꜰᴏʀᴄᴇ-ꜱᴜʙ ᴄʜᴀɴɴᴇʟꜱ</u>:</b>\n\n" + "<blockquote>" + "\n\n".join(lines) + "</blockquote>"
 
     links = flink_lines(client)
     if links:
-        text += "\n\n<b>⧉ <u>ʟɪɴᴋ ꜰ-ꜱᴜʙ</u>:</b>\n\n" + "\n\n".join(links)
+        text += "\n\n<b>⧉ <u>ʟɪɴᴋ ꜰ-ꜱᴜʙ</u>:</b>\n\n" + "<blockquote>" + "\n\n".join(links) + "</blockquote>"
 
     await sent.edit(text)
 
