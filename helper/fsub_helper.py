@@ -202,6 +202,8 @@ async def process_flink_add(client: Client, args: list) -> str:
 
     if not link.lower().startswith(("http://", "https://")):
         return "<b>Invalid link</b>"
+    if len(link) > 2048:
+        return f"<b>Link too long</b> ({len(link)}/2048)"
     if mode not in ("always", "once"):
         return "<b>Mode must be 'always' or 'once'</b>"
 
@@ -244,10 +246,9 @@ def flink_lines(client: Client) -> list:
     lines = []
     for idx, (lid, data) in enumerate(client.flink_dict.items(), start=1):
         link = data.get("link", "")
-        short = link if len(link) <= 45 else link[:42] + "..."
         lines.append(
             f"{idx}. <code>{lid}</code> ({str(data.get('mode', 'always')).capitalize()})\n"
-            f"<code>{html.escape(short, quote=False)}</code>"
+            f"<code>{html.escape(link, quote=False)}</code>"
         )
     return lines
 
