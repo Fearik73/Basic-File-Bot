@@ -255,9 +255,9 @@ def flink_lines(client: Client, numbered: bool = False) -> list:
     for idx, (lid, data) in enumerate(client.flink_dict.items(), start=1):
         link = data.get("link", "")
         body = (
-            f"▸ ʟɪɴᴋ_ɪᴅ - {lid}\n"
-            f"▸ ᴍᴏᴅᴇ - {str(data.get('mode', 'always')).capitalize()}\n"
-            f"▸ ʟɪɴᴋ - <code>{html.escape(link, quote=False)}</code>"
+            f"<b>▸ ʟɪɴᴋ_ɪᴅ -</b> {lid}\n"
+            f"<b>▸ ᴍᴏᴅᴇ -</b> {str(data.get('mode', 'always')).capitalize()}\n"
+            f"<b>▸ ʟɪɴᴋ -</b> <code>{html.escape(link, quote=False)}</code>"
         )
         lines.append(f"{idx}.\n{body}" if numbered else body)
     return lines
