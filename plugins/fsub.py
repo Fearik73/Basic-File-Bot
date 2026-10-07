@@ -6,7 +6,7 @@ from pyrogram.types import ChatJoinRequest, Message
 from config import ADMINS
 from database import add_join_request, total_users
 from helper.delivery import format_duration
-from helper.fsub_helper import ensure_fsub_loaded, process_fsub_add, process_fsub_remove
+from helper.fsub_helper import ensure_fsub_loaded, process_fsub_add, process_fsub_remove, process_flink_add, flink_lines
 
 
 @Client.on_chat_join_request()
@@ -29,6 +29,17 @@ async def fsub_command(client: Client, message: Message):
     status_msg = await message.reply("<b>Adding Force-Sub Channel.....</b>")
     result = await process_fsub_add(client, message.command[1:])
     await status_msg.edit(result)
+
+
+@Client.on_message(filters.command("ffsub") & filters.private)
+async def ffsub_command(client: Client, message: Message):
+    if message.from_user.id not in ADMINS:
+        return
+    await ensure_fsub_loaded(client)
+    if len(message.command) < 2:
+        return await message.reply("<b>Usage:</b> <code>/ffsub link always|once</code>")
+    result = await process_flink_add(client, message.command[1:])
+    await message.reply(result)
 
 
 @Client.on_message(filters.command("status") & filters.private)
@@ -66,6 +77,10 @@ async def fsub_status(client: Client, message: Message):
             )
         text += "<b>⧉ <u>ꜰᴏʀᴄᴇ-ꜱᴜʙ ᴄʜᴀɴɴᴇʟꜱ</u>:</b>\n\n" + "\n\n".join(lines)
 
+    links = flink_lines(client)
+    if links:
+        text += "\n\n<b>⧉ <u>ʟɪɴᴋ ꜰ-ꜱᴜʙ</u>:</b>\n\n" + "\n\n".join(links)
+
     await sent.edit(text)
 
 
@@ -79,3 +94,4 @@ async def fsub_remove(client: Client, message: Message):
     await ensure_fsub_loaded(client)
     result = await process_fsub_remove(client, message.command[1])
     await message.reply(result)
+    
