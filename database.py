@@ -1,8 +1,7 @@
 import asyncio
 import logging
 
-from pymongo import MongoClient, ReturnDocument
-from pymongo.errors import BulkWriteError, DuplicateKeyError
+from pymongo import MongoClient
 
 from config import (
     MONGO_URI, MONGO_DB_NAME, SHORT_URL, SHORT_API, SHORT_TUT,
@@ -23,61 +22,16 @@ except Exception:
     logger.exception("Could not reach MongoDB — check MONGO_URI/network access")
 
 
-counters = db["counters"]
-
-
-def _reserve_uids_sync(n: int) -> int:
-    """Reserve n sequential uids, returns the first one of the block."""
-    if counters.find_one({"_id": "uid"}) is None:
-        top = users.find_one({"uid": {"$exists": True}}, sort=[("uid", -1)])
-        try:
-            counters.update_one(
-                {"_id": "uid"},
-                {"$setOnInsert": {"seq": top["uid"] if top else 0}},
-                upsert=True,
-            )
-        except DuplicateKeyError:
-            pass
-    doc = counters.find_one_and_update(
-        {"_id": "uid"},
-        {"$inc": {"seq": n}},
-        return_document=ReturnDocument.AFTER,
-    )
-    return doc["seq"] - n + 1
-
-
 def _add_user_sync(user_id: int, username: str = None, first_name: str = None, last_name: str = None):
-    if users.find_one({"_id": user_id}, {"_id": 1}):
-        return
-    uid = _reserve_uids_sync(1)
     users.update_one(
         {"_id": user_id},
         {"$setOnInsert": {
             "username": username,
             "name": f"{first_name} {last_name}",
-            "uid": uid,
             "source": None,
         }},
         upsert=True,
     )
-
-
-def _import_users_batch_sync(ids: list) -> tuple:
-    """Insert only new ids (with sequential uid). Returns (inserted, skipped)."""
-    existing = {d["_id"] for d in users.find({"_id": {"$in": ids}}, {"_id": 1})}
-    new_ids = [i for i in ids if i not in existing]
-    if not new_ids:
-        return 0, len(ids)
-    start = _reserve_uids_sync(len(new_ids))
-    docs = [
-        {"_id": i, "username": None, "name": None, "uid": start + k, "source": None}
-        for k, i in enumerate(new_ids)
-    ]
-    try:
-        inserted = len(users.insert_many(docs, ordered=False).inserted_ids)
-    except BulkWriteError as e:
-        inserted = e.details.get("nInserted", 0)
-    return inserted, len(ids) - inserted
 
 
 def _del_user_sync(user_id: int):
@@ -99,10 +53,6 @@ def _total_users_sync() -> int:
 
 async def add_user(user_id: int, username: str = None, first_name: str = None, last_name: str = None):
     await asyncio.to_thread(_add_user_sync, user_id, username, first_name, last_name)
-
-
-async def import_users_batch(ids: list) -> tuple:
-    return await asyncio.to_thread(_import_users_batch_sync, ids)
 
 
 async def del_user(user_id: int):
@@ -239,4 +189,4 @@ async def has_flink_seen(link_id: str, user_id: int) -> bool:
 
 async def mark_flink_seen(link_id: str, user_id: int):
     await asyncio.to_thread(_mark_flink_seen_sync, link_id, user_id)
-    
+
