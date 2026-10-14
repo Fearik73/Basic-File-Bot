@@ -11,7 +11,8 @@ from pyrogram.errors import UserNotParticipant
 
 from config import FSUB_MESSAGE, FSUB_PHOTO
 from database import (
-    add_fsub_channel, get_all_fsub_channels, remove_fsub_channel, has_join_request,
+    add_fsub_channel, get_all_fsub_channels, remove_fsub_channel,
+    get_join_request_status, update_join_request_status, remove_join_request,
     get_all_flinks, add_flink, remove_flink, has_flink_seen, mark_flink_seen,
 )
 from helper.styling import styled_button, send_styled, safe_reply
@@ -19,26 +20,40 @@ from helper.styling import styled_button, send_styled, safe_reply
 logger = logging.getLogger(__name__)
 
 
+_ACTIVE = (ChatMemberStatus.MEMBER, ChatMemberStatus.ADMINISTRATOR, ChatMemberStatus.OWNER)
+
+
+async def _request_pending(channel_id: int, user_id: int) -> bool:
+    try:
+        status = await get_join_request_status(channel_id, user_id)
+        if status is None:
+            return False
+        if status == "approved":
+            await remove_join_request(channel_id, user_id)
+            return False
+        return True
+    except Exception:
+        logger.exception("Error checking join-request record for channel_id=%s", channel_id)
+        return False
+
+
 async def check_subscription(client: Client, user_id: int) -> dict:
     statuses = {}
     for channel_id, data in client.fsub_dict.items():
-        if data.get("request"):
-            try:
-                if await has_join_request(channel_id, user_id):
-                    statuses[channel_id] = True
-                    continue
-            except Exception:
-                logger.exception("Error checking join-request record for channel_id=%s", channel_id)
-
+        request = data.get("request")
         try:
             member = await client.get_chat_member(channel_id, user_id)
-            statuses[channel_id] = member.status in (
-                ChatMemberStatus.MEMBER,
-                ChatMemberStatus.ADMINISTRATOR,
-                ChatMemberStatus.OWNER,
-            )
+            if member.status in _ACTIVE:
+                if request:
+                    try:
+                        await update_join_request_status(channel_id, user_id, "approved", only_if="pending")
+                    except Exception:
+                        logger.exception("Error marking join request approved channel_id=%s", channel_id)
+                statuses[channel_id] = True
+            else:
+                statuses[channel_id] = await _request_pending(channel_id, user_id) if request else False
         except UserNotParticipant:
-            statuses[channel_id] = False
+            statuses[channel_id] = await _request_pending(channel_id, user_id) if request else False
         except Exception:
             logger.exception("Error checking fsub status for channel_id=%s", channel_id)
             statuses[channel_id] = True
@@ -365,5 +380,6 @@ async def process_fsub_remove(client: Client, channel_id_raw: str) -> str:
         f"<b>ᴄʜᴀɴɴᴇʟ:</b> {name}\n"
         f"<b>ɪᴅ:</b> <code>{channel_id}</code>"
     )
+
 
     
