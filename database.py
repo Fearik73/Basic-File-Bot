@@ -1,5 +1,6 @@
 import asyncio
 import logging
+import time
 
 from pymongo import MongoClient
 
@@ -102,7 +103,12 @@ join_requests = db[REQUEST_COLLECTION]
 def _add_join_request_sync(channel_id: int, user_id: int):
     join_requests.update_one(
         {"_id": f"{channel_id}:{user_id}"},
-        {"$set": {"channel_id": channel_id, "user_id": user_id}},
+        {"$set": {
+            "channel_id": channel_id,
+            "user_id": user_id,
+            "status": "pending",
+            "submitted_at": time.time(),
+        }},
         upsert=True,
     )
 
@@ -111,12 +117,42 @@ def _has_join_request_sync(channel_id: int, user_id: int) -> bool:
     return join_requests.find_one({"_id": f"{channel_id}:{user_id}"}) is not None
 
 
+def _get_join_request_status_sync(channel_id: int, user_id: int):
+    doc = join_requests.find_one({"_id": f"{channel_id}:{user_id}"})
+    if not doc:
+        return None
+    return doc.get("status", "pending")
+
+
+def _update_join_request_status_sync(channel_id: int, user_id: int, status: str, only_if: str = None):
+    query = {"_id": f"{channel_id}:{user_id}"}
+    if only_if:
+        query["status"] = only_if
+    join_requests.update_one(query, {"$set": {"status": status}})
+
+
+def _remove_join_request_sync(channel_id: int, user_id: int):
+    join_requests.delete_one({"_id": f"{channel_id}:{user_id}"})
+
+
 async def add_join_request(channel_id: int, user_id: int):
     await asyncio.to_thread(_add_join_request_sync, channel_id, user_id)
 
 
 async def has_join_request(channel_id: int, user_id: int) -> bool:
     return await asyncio.to_thread(_has_join_request_sync, channel_id, user_id)
+
+
+async def get_join_request_status(channel_id: int, user_id: int):
+    return await asyncio.to_thread(_get_join_request_status_sync, channel_id, user_id)
+
+
+async def update_join_request_status(channel_id: int, user_id: int, status: str, only_if: str = None):
+    await asyncio.to_thread(_update_join_request_status_sync, channel_id, user_id, status, only_if)
+
+
+async def remove_join_request(channel_id: int, user_id: int):
+    await asyncio.to_thread(_remove_join_request_sync, channel_id, user_id)
 
 
 bot_settings = db[SETTINGS_COLLECTION]
