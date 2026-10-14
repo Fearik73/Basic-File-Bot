@@ -1,21 +1,53 @@
+import logging
 import time
 
 from pyrogram import Client, filters
-from pyrogram.types import ChatJoinRequest, Message
+from pyrogram.enums import ChatMemberStatus
+from pyrogram.types import ChatJoinRequest, ChatMemberUpdated, Message
 
 from config import ADMINS
-from database import add_join_request, total_users
+from database import add_join_request, update_join_request_status, remove_join_request, total_users
 from helper.delivery import format_duration
 from helper.fsub_helper import ensure_fsub_loaded, process_fsub_add, process_fsub_remove, process_flink_add, flink_lines
 
 
+logger = logging.getLogger(__name__)
+
+_ACTIVE = {ChatMemberStatus.MEMBER, ChatMemberStatus.ADMINISTRATOR, ChatMemberStatus.OWNER}
+
+
 @Client.on_chat_join_request()
 async def fsub_join_request(client: Client, chat_join_request: ChatJoinRequest):
-    await ensure_fsub_loaded(client)
-    channel_id = chat_join_request.chat.id
-    if channel_id not in client.fsub_dict:
-        return
-    await add_join_request(channel_id, chat_join_request.from_user.id)
+    try:
+        await ensure_fsub_loaded(client)
+        channel_id = chat_join_request.chat.id
+        if channel_id not in client.fsub_dict:
+            return
+        await add_join_request(channel_id, chat_join_request.from_user.id)
+    except Exception:
+        logger.exception("Join request save failed")
+
+
+@Client.on_chat_member_updated()
+async def fsub_member_update(client: Client, update: ChatMemberUpdated):
+    try:
+        await ensure_fsub_loaded(client)
+        channel_id = update.chat.id
+        if channel_id not in client.fsub_dict:
+            return
+        affected = update.new_chat_member or update.old_chat_member
+        if not affected or not affected.user or affected.user.id == client.me.id:
+            return
+        user_id = affected.user.id
+        old = update.old_chat_member.status if update.old_chat_member else None
+        new = update.new_chat_member.status if update.new_chat_member else None
+
+        if new in _ACTIVE and old not in _ACTIVE:
+            await update_join_request_status(channel_id, user_id, "approved", only_if="pending")
+        elif old in _ACTIVE and new not in _ACTIVE:
+            await remove_join_request(channel_id, user_id)
+    except Exception:
+        logger.exception("Member update handling failed")
 
 
 @Client.on_message(filters.command("fsub") & filters.private)
@@ -95,4 +127,4 @@ async def fsub_remove(client: Client, message: Message):
     result = await process_fsub_remove(client, message.command[1])
     await message.reply(result)
 
-    
+
