@@ -105,6 +105,8 @@ def force_sub(func):
             return await func(client, message)
 
         checking_msg = await safe_reply(message, "<b>Checking Subscription.....</b>")
+        if checking_msg is None:  # user blocked the bot / deleted account
+            return
 
         raw_payload = message.command[1] if len(message.command) > 1 else None
 
