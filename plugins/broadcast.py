@@ -7,7 +7,7 @@ from pyrogram.errors import FloodWait, UserIsBlocked, InputUserDeactivated, Chan
 from pyrogram.types import Message
 
 from config import ADMINS
-from database import full_userbase, full_userbase_range, total_users, del_user
+from database import full_userbase, full_userbase_range, total_users
 
 logger = logging.getLogger(__name__)
 
@@ -159,4 +159,4 @@ async def range_broadcast_command(client: Client, message: Message):
 
     status_msg = await message.reply(f"<blockquote><i>Broadcasting range {range_label}.. this will take some time</i></blockquote>")
     await _run_broadcast(client, status_msg, message.reply_to_message, pin=False, user_ids=user_ids, range_label=range_label, next_start=next_start)
-    
+
