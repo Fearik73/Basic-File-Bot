@@ -3,7 +3,7 @@ import logging
 
 from pyrogram import Client
 from pyrogram.types import Message
-from pyrogram.errors import FloodWait
+from pyrogram.errors import FloodWait, UserIsBlocked, InputUserDeactivated, UserDeactivated, UserDeactivatedBan, PeerIdInvalid
 
 from config import DB_CHANNEL_ID
 from helper.settings_store import ensure_settings_loaded
@@ -119,11 +119,17 @@ async def _warn_and_schedule_delete(client: Client, chat_id: int, sent: Message)
 async def copy_with_retry(msg, chat_id: int, protect_content: bool = False):
     try:
         return await msg.copy(chat_id, reply_markup=msg.reply_markup, protect_content=protect_content)
+    except (UserIsBlocked, InputUserDeactivated, UserDeactivated, UserDeactivatedBan, PeerIdInvalid):
+        logger.warning("User unreachable (blocked/deactivated), skipping chat_id=%s", chat_id)
+        return None
     except FloodWait as e:
         logger.warning("FloodWait %ss while delivering message_id=%s -> chat_id=%s", e.value, msg.id, chat_id)
         await asyncio.sleep(e.value)
         try:
             return await msg.copy(chat_id, reply_markup=msg.reply_markup, protect_content=protect_content)
+        except (UserIsBlocked, InputUserDeactivated, UserDeactivated, UserDeactivatedBan, PeerIdInvalid):
+            logger.warning("User unreachable (blocked/deactivated), skipping chat_id=%s", chat_id)
+            return None
         except Exception:
             logger.exception("Failed to deliver message_id=%s -> chat_id=%s", msg.id, chat_id)
             return None
