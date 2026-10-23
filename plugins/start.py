@@ -5,7 +5,7 @@ from pyrogram.types import Message, CallbackQuery, InlineKeyboardMarkup
 
 from config import ADMINS, START_MESSAGE, START_BUTTONS, MESSAGE_EFFECT_ID, START_IMAGE
 from database import add_user, total_users
-from helper.styling import styled_button, send_styled, edit_styled, safe_reply
+from helper.styling import styled_button, send_styled, safe_reply
 from helper.delivery import deliver, send_batch
 from helper.fsub_helper import force_sub
 from helper.settings_store import ensure_settings_loaded
@@ -16,7 +16,7 @@ logger = logging.getLogger(__name__)
 
 def build_start_markup() -> InlineKeyboardMarkup | None:
     buttons = [
-        styled_button(b["label"], url=b.get("url"), style=b.get("style"))
+        styled_button(b["label"], url=b.get("url"))
         for b in START_BUTTONS
     ]
     if not buttons:
@@ -36,10 +36,10 @@ async def send_shortener_gate(client: Client, message: Message, payload: str):
     tutorial_link = client.settings.get("tutorial_link") or short_link
 
     buttons = InlineKeyboardMarkup([
-        [styled_button("• ᴄʟɪᴄᴋ ʜᴇʀᴇ ᴛᴏ ᴅᴏᴡɴʟᴏᴀᴅ •", url=short_link, style="danger")],
+        [styled_button("• ᴄʟɪᴄᴋ ʜᴇʀᴇ ᴛᴏ ᴅᴏᴡɴʟᴏᴀᴅ •", url=short_link)],
         [
-            styled_button("ᴛᴜᴛᴏʀɪᴀʟ", url=tutorial_link, style="primary"),
-            styled_button("ᴄʟᴏꜱᴇ", callback_data="close", style="primary"),
+            styled_button("ᴛᴜᴛᴏʀɪᴀʟ", url=tutorial_link),
+            styled_button("ᴄʟᴏꜱᴇ", callback_data="close"),
         ],
     ])
 
