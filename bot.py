@@ -1,5 +1,6 @@
 import logging
 import time
+from logging.handlers import RotatingFileHandler
 
 from pyrogram import Client, idle
 from pyrogram.enums import ParseMode
@@ -7,7 +8,14 @@ from pyrogram.enums import ParseMode
 from plugins.restart import notify_restart
 from config import API_ID, API_HASH, BOT_TOKEN, CLIENT_NAME, WORKERS
 
-logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(name)s - %(message)s")
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s - %(levelname)s - %(name)s - %(message)s",
+    handlers=[
+        logging.StreamHandler(),
+        RotatingFileHandler("log.txt", maxBytes=5 * 1024 * 1024, backupCount=1, encoding="utf-8"),
+    ],
+)
 logger = logging.getLogger(__name__)
 logging.getLogger("pyrogram").setLevel(logging.WARNING)
 
