@@ -40,6 +40,6 @@ async def notify_restart(client: Client):
                 await client.delete_messages(chat_id, msg_id)
             except Exception:
                 pass
-        await client.send_message(chat_id, "<b>Bot restarted Successfully</b>")
+        await client.send_message(chat_id, "<b>♻️ Bot restarted Successfully</b>")
     except Exception:
         logger.exception("Failed to send restart notification")
