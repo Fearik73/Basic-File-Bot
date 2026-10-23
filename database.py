@@ -35,10 +35,6 @@ def _add_user_sync(user_id: int, username: str = None, first_name: str = None, l
     )
 
 
-def _del_user_sync(user_id: int):
-    users.delete_one({"_id": user_id})
-
-
 def _full_userbase_sync() -> list:
     return [doc["_id"] for doc in users.find()]
 
@@ -54,10 +50,6 @@ def _total_users_sync() -> int:
 
 async def add_user(user_id: int, username: str = None, first_name: str = None, last_name: str = None):
     await asyncio.to_thread(_add_user_sync, user_id, username, first_name, last_name)
-
-
-async def del_user(user_id: int):
-    await asyncio.to_thread(_del_user_sync, user_id)
 
 
 async def full_userbase() -> list:
@@ -113,10 +105,6 @@ def _add_join_request_sync(channel_id: int, user_id: int):
     )
 
 
-def _has_join_request_sync(channel_id: int, user_id: int) -> bool:
-    return join_requests.find_one({"_id": f"{channel_id}:{user_id}"}) is not None
-
-
 def _get_join_request_status_sync(channel_id: int, user_id: int):
     doc = join_requests.find_one({"_id": f"{channel_id}:{user_id}"})
     if not doc:
@@ -137,10 +125,6 @@ def _remove_join_request_sync(channel_id: int, user_id: int):
 
 async def add_join_request(channel_id: int, user_id: int):
     await asyncio.to_thread(_add_join_request_sync, channel_id, user_id)
-
-
-async def has_join_request(channel_id: int, user_id: int) -> bool:
-    return await asyncio.to_thread(_has_join_request_sync, channel_id, user_id)
 
 
 async def get_join_request_status(channel_id: int, user_id: int):
