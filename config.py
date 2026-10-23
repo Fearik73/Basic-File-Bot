@@ -16,10 +16,10 @@ DB_CHANNEL_ID = int(os.environ.get("DB_CHANNEL_ID", ""))
 MONGO_DB_NAME = os.environ.get("MONGO_DB_NAME", "")
 MONGO_URI = os.environ.get("MONGO_URI", "")
 
-USERS_COLLECTION = os.environ.get("USERS_COLLECTION", "users")
-FSUB_COLLECTION = os.environ.get("FSUB_COLLECTION", "fsub")
-REQUEST_COLLECTION = os.environ.get("REQUEST_COLLECTION", "req")
-SETTINGS_COLLECTION = os.environ.get("SETTINGS_COLLECTION", "settings")
+USERS_COLLECTION = os.environ.get("USERS_COLLECTION", "")
+FSUB_COLLECTION = os.environ.get("FSUB_COLLECTION", "")
+REQUEST_COLLECTION = os.environ.get("REQUEST_COLLECTION", "")
+SETTINGS_COLLECTION = os.environ.get("SETTINGS_COLLECTION", "")
 
 
 _admins_raw = os.environ.get("ADMINS", "7375326036")
@@ -28,7 +28,7 @@ ADMINS = [int(x.strip()) for x in _admins_raw.split(",") if x.strip()]
 
 WORKERS = int(os.environ.get("WORKERS", "200"))
 
-SEASON_NAME = os.environ.get("SEASON_NAME", "filebot")
+SEASON_NAME = os.environ.get("SEASON_NAME", "")
 CLIENT_NAME = SEASON_NAME
 
 START_MESSAGE = os.environ.get(
