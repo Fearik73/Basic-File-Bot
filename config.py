@@ -5,6 +5,7 @@ from dotenv import load_dotenv
 load_dotenv("config.env")
 
 MESSAGE_EFFECT_ID = 5104841245755180586
+BROADCAST_EFFECT_ID = 5046509860389126442
 
 API_ID = int(os.environ.get("API_ID", ""))
 API_HASH = os.environ.get("API_HASH", "")
