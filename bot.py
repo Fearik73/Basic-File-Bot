@@ -4,6 +4,7 @@ import time
 from pyrogram import Client, idle
 from pyrogram.enums import ParseMode
 
+from plugins.restart import notify_restart
 from config import API_ID, API_HASH, BOT_TOKEN, CLIENT_NAME, WORKERS
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(name)s - %(message)s")
@@ -29,6 +30,7 @@ async def main():
     await app.start()
     me = await app.get_me()
     logger.info("✅ Bot running as @%s", me.username)
+    await notify_restart(app)
     await idle()
     await app.stop()
 
