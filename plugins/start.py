@@ -1,11 +1,11 @@
 import logging
 
 from pyrogram import Client, filters
-from pyrogram.types import Message, CallbackQuery, InlineKeyboardMarkup
+from pyrogram.types import Message, CallbackQuery, InlineKeyboardMarkup, InlineKeyboardButton
 
 from config import ADMINS, START_MESSAGE, START_BUTTONS, MESSAGE_EFFECT_ID, START_IMAGE
 from database import add_user, total_users
-from helper.styling import styled_button, send_styled, safe_reply
+from helper.messaging import send_msg, safe_reply
 from helper.delivery import deliver, send_batch
 from helper.fsub_helper import force_sub
 from helper.settings_store import ensure_settings_loaded
@@ -16,7 +16,7 @@ logger = logging.getLogger(__name__)
 
 def build_start_markup() -> InlineKeyboardMarkup | None:
     buttons = [
-        styled_button(b["label"], url=b.get("url"))
+        InlineKeyboardButton(b["label"], url=b.get("url"))
         for b in START_BUTTONS
     ]
     if not buttons:
@@ -36,14 +36,14 @@ async def send_shortener_gate(client: Client, message: Message, payload: str):
     tutorial_link = client.settings.get("tutorial_link") or short_link
 
     buttons = InlineKeyboardMarkup([
-        [styled_button("• ᴄʟɪᴄᴋ ʜᴇʀᴇ ᴛᴏ ᴅᴏᴡɴʟᴏᴀᴅ •", url=short_link)],
+        [InlineKeyboardButton("• ᴄʟɪᴄᴋ ʜᴇʀᴇ ᴛᴏ ᴅᴏᴡɴʟᴏᴀᴅ •", url=short_link)],
         [
-            styled_button("ᴛᴜᴛᴏʀɪᴀʟ", url=tutorial_link),
-            styled_button("ᴄʟᴏꜱᴇ", callback_data="close"),
+            InlineKeyboardButton("ᴛᴜᴛᴏʀɪᴀʟ", url=tutorial_link),
+            InlineKeyboardButton("ᴄʟᴏꜱᴇ", callback_data="close"),
         ],
     ])
 
-    await send_styled(
+    await send_msg(
         client,
         message.chat.id,
         "<b>➲ ʏᴏᴜʀ ʟɪɴᴋ ɪꜱ ʀᴇᴀᴅʏ!</b>\n\n<i>_Click the button given below to download your file_</i>",
@@ -65,7 +65,7 @@ async def start_handler(client: Client, message: Message):
         logger.exception("Failed to store user %s in MongoDB", message.from_user.id)
 
     if len(message.command) < 2:
-        await send_styled(
+        await send_msg(
             client,
             message.chat.id,
             START_MESSAGE,
