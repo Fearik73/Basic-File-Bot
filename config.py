@@ -52,6 +52,6 @@ SHORT_TUT = os.environ.get("SHORT_TUT", "")
 
 
 START_BUTTONS = [
-    {"label": "Ongoing Anime", "url": "http://t.me/Od3nsLinks_bot?start=18LTEwMDI2NzQyMDM5NTu9cVY=", "style": "primary"},
-    {"label": "Finished Anime", "url": "http://t.me/Od3nsLinks_bot?start=16LTEwMDI2NjMwODUzH19vNzg=", "style": "danger"},
+    {"label": "Ongoing Anime", "url": "http://t.me/Od3nsLinks_bot?start=18LTEwMDI2NzQyMDM5NTu9cVY="},
+    {"label": "Finished Anime", "url": "http://t.me/Od3nsLinks_bot?start=16LTEwMDI2NjMwODUzH19vNzg="},
 ]
