@@ -4,11 +4,11 @@ import string
 
 import aiohttp
 from pyrogram import Client, filters
-from pyrogram.types import CallbackQuery, InlineKeyboardMarkup
+from pyrogram.types import CallbackQuery, InlineKeyboardMarkup, InlineKeyboardButton
 
 from config import ADMINS
 from database import update_settings
-from helper.styling import styled_button, edit_styled
+from helper.messaging import edit_msg
 from helper.settings_store import ensure_settings_loaded
 
 logger = logging.getLogger(__name__)
@@ -83,14 +83,14 @@ def build_shortner_panel(client: Client):
     )
     markup = InlineKeyboardMarkup([
         [
-            styled_button(f"{toggle_label} ꜱʜᴏʀᴛɴᴇʀ", callback_data="set_shortner_toggle", style="primary"),
-            styled_button("ꜱᴇᴛ ᴜʀʟ/ᴀᴘɪ", callback_data="set_shortner_seturl", style="primary"),
+            InlineKeyboardButton(f"{toggle_label} ꜱʜᴏʀᴛɴᴇʀ", callback_data="set_shortner_toggle"),
+            InlineKeyboardButton("ꜱᴇᴛ ᴜʀʟ/ᴀᴘɪ", callback_data="set_shortner_seturl"),
         ],
         [
-            styled_button("ꜱᴇᴛ ᴛᴜᴛᴏʀɪᴀʟ ʟɪɴᴋ", callback_data="set_shortner_tutorial", style="primary"),
-            styled_button("ᴛᴇꜱᴛ ꜱʜᴏʀᴛɴᴇʀ", callback_data="set_shortner_test", style="primary"),
+            InlineKeyboardButton("ꜱᴇᴛ ᴛᴜᴛᴏʀɪᴀʟ ʟɪɴᴋ", callback_data="set_shortner_tutorial"),
+            InlineKeyboardButton("ᴛᴇꜱᴛ ꜱʜᴏʀᴛɴᴇʀ", callback_data="set_shortner_test"),
         ],
-        [styled_button("◂ ʙᴀᴄᴋ", callback_data="set_menu_main", style="danger")],
+        [InlineKeyboardButton("◂ ʙᴀᴄᴋ", callback_data="set_menu_main")],
     ])
     return text, markup
 
@@ -101,7 +101,7 @@ async def settings_menu_shortner(client: Client, query: CallbackQuery):
         return await query.answer("Not authorized", show_alert=True)
     await ensure_settings_loaded(client)
     text, markup = build_shortner_panel(client)
-    await edit_styled(client, query.message, text, reply_markup=markup)
+    await edit_msg(client, query.message, text, reply_markup=markup)
     await query.answer()
 
 
@@ -118,7 +118,7 @@ async def settings_shortner_toggle(client: Client, query: CallbackQuery):
         logger.exception("Failed to persist shortner_enabled setting")
 
     text, markup = build_shortner_panel(client)
-    await edit_styled(client, query.message, text, reply_markup=markup)
+    await edit_msg(client, query.message, text, reply_markup=markup)
     await query.answer(f"Shortener {'enabled' if value else 'disabled'}")
 
 
@@ -130,7 +130,7 @@ async def settings_shortner_seturl(client: Client, query: CallbackQuery):
 
     from plugins.settings import _wait_for_reply
 
-    await edit_styled(
+    await edit_msg(
         client,
         query.message,
         "<b>➲ ꜱᴇᴛ ꜱʜᴏʀᴛɴᴇʀ ᴜʀʟ/ᴀᴘɪ</b>\n\n"
@@ -163,8 +163,8 @@ async def settings_shortner_seturl(client: Client, query: CallbackQuery):
         else:
             text = "<b>ɪɴᴠᴀʟɪᴅ ꜰᴏʀᴍᴀᴛ! ᴜꜱᴇ:</b> url api"
 
-    markup = InlineKeyboardMarkup([[styled_button("◂ ʙᴀᴄᴋ", callback_data="set_menu_shortner", style="danger")]])
-    await edit_styled(client, query.message, text, reply_markup=markup)
+    markup = InlineKeyboardMarkup([[InlineKeyboardButton("◂ ʙᴀᴄᴋ", callback_data="set_menu_shortner")]])
+    await edit_msg(client, query.message, text, reply_markup=markup)
 
 
 @Client.on_callback_query(filters.regex("^set_shortner_tutorial$"))
@@ -175,7 +175,7 @@ async def settings_shortner_tutorial(client: Client, query: CallbackQuery):
 
     from plugins.settings import _wait_for_reply
 
-    await edit_styled(
+    await edit_msg(
         client,
         query.message,
         "<b>➲ ꜱᴇᴛ ᴛᴜᴛᴏʀɪᴀʟ ʟɪɴᴋ</b>\n\n"
@@ -200,8 +200,8 @@ async def settings_shortner_tutorial(client: Client, query: CallbackQuery):
         else:
             text = "<b>ɪɴᴠᴀʟɪᴅ ʟɪɴᴋ! ᴍᴜꜱᴛ ꜱᴛᴀʀᴛ ᴡɪᴛʜ https:// ᴏʀ http://</b>"
 
-    markup = InlineKeyboardMarkup([[styled_button("◂ ʙᴀᴄᴋ", callback_data="set_menu_shortner", style="danger")]])
-    await edit_styled(client, query.message, text, reply_markup=markup)
+    markup = InlineKeyboardMarkup([[InlineKeyboardButton("◂ ʙᴀᴄᴋ", callback_data="set_menu_shortner")]])
+    await edit_msg(client, query.message, text, reply_markup=markup)
 
 
 @Client.on_callback_query(filters.regex("^set_shortner_test$"))
@@ -211,7 +211,7 @@ async def settings_shortner_test(client: Client, query: CallbackQuery):
     await ensure_settings_loaded(client)
     await query.answer()
 
-    await edit_styled(client, query.message, "<b>🔄 ᴛᴇꜱᴛɪɴɢ ꜱʜᴏʀᴛɴᴇʀ...</b>")
+    await edit_msg(client, query.message, "<b>🔄 ᴛᴇꜱᴛɪɴɢ ꜱʜᴏʀᴛɴᴇʀ...</b>")
 
     short_url = client.settings.get("short_url", "")
     short_api = client.settings.get("short_api", "")
@@ -238,5 +238,6 @@ async def settings_shortner_test(client: Client, query: CallbackQuery):
         except Exception as e:
             text = f"<b>❌ Shortner Test Failed</b>\n\n<b>Error:</b> {e}"
 
-    markup = InlineKeyboardMarkup([[styled_button("◂ ʙᴀᴄᴋ", callback_data="set_menu_shortner", style="danger")]])
-    await edit_styled(client, query.message, text, reply_markup=markup)
+    markup = InlineKeyboardMarkup([[InlineKeyboardButton("◂ ʙᴀᴄᴋ", callback_data="set_menu_shortner")]])
+    await edit_msg(client, query.message, text, reply_markup=markup)
+            
