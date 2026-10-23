@@ -5,9 +5,9 @@ import time
 from datetime import datetime, timedelta
 
 from pyrogram import Client
-from pyrogram.types import Message, InlineKeyboardMarkup, InlineKeyboardButton
+from pyrogram.types import Message, InlineKeyboardMarkup
 from pyrogram.enums import ChatMemberStatus
-from pyrogram.errors import UserNotParticipant, FloodWait
+from pyrogram.errors import UserNotParticipant
 
 from config import FSUB_MESSAGE, FSUB_PHOTO
 from database import (
@@ -15,7 +15,7 @@ from database import (
     get_join_request_status, update_join_request_status, remove_join_request,
     get_all_flinks, add_flink, remove_flink, has_flink_seen, mark_flink_seen,
 )
-from helper.messaging import send_msg, safe_reply
+from helper.styling import styled_button, send_styled, safe_reply
 
 logger = logging.getLogger(__name__)
 
@@ -39,7 +39,7 @@ async def _request_pending(channel_id: int, user_id: int) -> bool:
 
 async def check_subscription(client: Client, user_id: int) -> dict:
     statuses = {}
-    for channel_id, data in client.fsub_dict.items():
+    for channel_id, data in list(client.fsub_dict.items()):
         request = data.get("request")
         try:
             member = await client.get_chat_member(channel_id, user_id)
@@ -98,38 +98,6 @@ def _ordered_entries(client: Client, include_links: bool) -> list:
     return entries
 
 
-_invite_cache = {}
-_invite_locks = {}
-
-
-async def _get_timed_link(client: Client, channel_id: int, data: dict):
-    timer = data.get("timer", 0)
-    cached = _invite_cache.get(channel_id)
-    if cached and cached[1] > time.time():
-        return cached[0]
-    lock = _invite_locks.setdefault(channel_id, asyncio.Lock())
-    async with lock:
-        cached = _invite_cache.get(channel_id)
-        if cached and cached[1] > time.time():
-            return cached[0]
-        for _ in range(2):
-            try:
-                invite = await client.create_chat_invite_link(
-                    channel_id,
-                    expire_date=datetime.now() + timedelta(minutes=timer),
-                    creates_join_request=data.get("request", False),
-                )
-                _invite_cache[channel_id] = (invite.invite_link, time.time() + timer * 30)
-                return invite.invite_link
-            except FloodWait as e:
-                logger.warning("FloodWait %ss creating invite link for %s", e.value, channel_id)
-                await asyncio.sleep(min(e.value, 30) + 1)
-            except Exception:
-                logger.exception("Error creating invite link for channel_id=%s", channel_id)
-                break
-    return cached[0] if cached else data.get("link")
-
-
 def force_sub(func):
     async def wrapper(client: Client, message: Message):
         await ensure_fsub_loaded(client)
@@ -162,7 +130,7 @@ def force_sub(func):
 
         pending_links = []
         if consider_fake:
-            for lid, data in client.flink_dict.items():
+            for lid, data in list(client.flink_dict.items()):
                 if data.get("mode") == "once":
                     try:
                         if await has_flink_seen(lid, user_id):
@@ -196,19 +164,25 @@ def force_sub(func):
                     continue
                 link = data.get("link")
                 if data.get("timer", 0) > 0:
-                    link = await _get_timed_link(client, key, data)
+                    try:
+                        invite = await client.create_chat_invite_link(
+                            key,
+                            expire_date=datetime.now() + timedelta(minutes=data["timer"]),
+                            creates_join_request=data.get("request", False),
+                        )
+                        link = invite.invite_link
+                    except Exception:
+                        logger.exception("Error creating invite link for channel_id=%s", key)
 
-            if not link:
-                continue
-            buttons_raw.append({"text": f"Channel {rank:02d}", "url": link})
+            buttons_raw.append({"text": f"Channel {rank:02d}", "url": link, "style": "primary"})
 
         try_again_payload = f"retry_{original_payload}" if original_payload else "retry"
         try_again_link = f"https://t.me/{client.me.username}?start={try_again_payload}"
-        buttons_raw.append({"text": "Try Again", "url": try_again_link})
+        buttons_raw.append({"text": "Try Again", "url": try_again_link, "style": "danger"})
 
         rows = [buttons_raw[i:i + 2] for i in range(0, len(buttons_raw), 2)]
         markup = InlineKeyboardMarkup(
-            [[InlineKeyboardButton(b["text"], url=b["url"]) for b in row] for row in rows]
+            [[styled_button(b["text"], url=b["url"], style=b["style"]) for b in row] for row in rows]
         )
 
         try:
@@ -216,7 +190,7 @@ def force_sub(func):
         except Exception:
             pass
 
-        await send_msg(
+        await send_styled(
             client,
             message.chat.id,
             FSUB_MESSAGE,
