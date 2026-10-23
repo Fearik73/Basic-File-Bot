@@ -2,11 +2,11 @@ import asyncio
 import logging
 
 from pyrogram import Client, filters
-from pyrogram.types import Message, CallbackQuery, InlineKeyboardMarkup
+from pyrogram.types import Message, CallbackQuery, InlineKeyboardMarkup, InlineKeyboardButton
 
 from config import ADMINS, SETTINGS_IMAGE
 from database import update_settings
-from helper.styling import styled_button, send_styled, edit_styled
+from helper.messaging import send_msg, edit_msg
 from helper.delivery import format_duration
 from helper.settings_store import ensure_settings_loaded
 from helper.fsub_helper import ensure_fsub_loaded, process_fsub_add, process_fsub_remove, flink_lines
@@ -52,12 +52,12 @@ def build_main_settings_panel(client: Client):
     )
     markup = InlineKeyboardMarkup([
         [
-            styled_button("ᴘʀᴏᴛᴇᴄᴛ ᴄᴏɴᴛᴇɴᴛ", callback_data="set_menu_protect", style="primary"),
-            styled_button("ᴀᴜᴛᴏ ᴅᴇʟᴇᴛᴇ", callback_data="set_menu_autodel", style="primary"),
+            InlineKeyboardButton("ᴘʀᴏᴛᴇᴄᴛ ᴄᴏɴᴛᴇɴᴛ", callback_data="set_menu_protect"),
+            InlineKeyboardButton("ᴀᴜᴛᴏ ᴅᴇʟᴇᴛᴇ", callback_data="set_menu_autodel"),
         ],
         [
-            styled_button("ꜰᴏʀᴄᴇ ꜱᴜʙ", callback_data="set_menu_fsub", style="danger"),
-            styled_button("ꜱʜᴏʀᴛɴᴇʀ", callback_data="set_menu_shortner", style="danger"),
+            InlineKeyboardButton("ꜰᴏʀᴄᴇ ꜱᴜʙ", callback_data="set_menu_fsub"),
+            InlineKeyboardButton("ꜱʜᴏʀᴛɴᴇʀ", callback_data="set_menu_shortner"),
         ],
     ])
     return text, markup
@@ -73,10 +73,10 @@ def build_protect_panel(client: Client):
     )
     markup = InlineKeyboardMarkup([
         [
-            styled_button(on_label, callback_data="set_protect_on", style="primary"),
-            styled_button(off_label, callback_data="set_protect_off", style="primary"),
+            InlineKeyboardButton(on_label, callback_data="set_protect_on"),
+            InlineKeyboardButton(off_label, callback_data="set_protect_off"),
         ],
-        [styled_button("◂ ʙᴀᴄᴋ", callback_data="set_menu_main", style="danger")],
+        [InlineKeyboardButton("◂ ʙᴀᴄᴋ", callback_data="set_menu_main")],
     ])
     return text, markup
 
@@ -93,10 +93,10 @@ def build_fsub_panel(client: Client):
     )
     markup = InlineKeyboardMarkup([
         [
-            styled_button("ᴀᴅᴅ ᴄʜᴀɴɴᴇʟ", callback_data="set_fsub_add", style="primary"),
-            styled_button("ʀᴇᴍᴏᴠᴇ ᴄʜᴀɴɴᴇʟ", callback_data="set_fsub_remove", style="primary"),
+            InlineKeyboardButton("ᴀᴅᴅ ᴄʜᴀɴɴᴇʟ", callback_data="set_fsub_add"),
+            InlineKeyboardButton("ʀᴇᴍᴏᴠᴇ ᴄʜᴀɴɴᴇʟ", callback_data="set_fsub_remove"),
         ],
-        [styled_button("◂ ʙᴀᴄᴋ", callback_data="set_menu_main", style="danger")],
+        [InlineKeyboardButton("◂ ʙᴀᴄᴋ", callback_data="set_menu_main")],
     ])
     return text, markup
 
@@ -108,7 +108,7 @@ async def settings_command(client: Client, message: Message):
     await ensure_settings_loaded(client)
     await ensure_fsub_loaded(client)
     text, markup = build_main_settings_panel(client)
-    await send_styled(client, message.chat.id, text, reply_markup=markup, photo=SETTINGS_IMAGE or None)
+    await send_msg(client, message.chat.id, text, reply_markup=markup, photo=SETTINGS_IMAGE or None)
 
 
 @Client.on_callback_query(filters.regex("^set_menu_main$"))
@@ -118,7 +118,7 @@ async def settings_menu_main(client: Client, query: CallbackQuery):
     await ensure_settings_loaded(client)
     await ensure_fsub_loaded(client)
     text, markup = build_main_settings_panel(client)
-    await edit_styled(client, query.message, text, reply_markup=markup)
+    await edit_msg(client, query.message, text, reply_markup=markup)
     await query.answer()
 
 
@@ -128,7 +128,7 @@ async def settings_menu_protect(client: Client, query: CallbackQuery):
         return await query.answer("Not authorized", show_alert=True)
     await ensure_settings_loaded(client)
     text, markup = build_protect_panel(client)
-    await edit_styled(client, query.message, text, reply_markup=markup)
+    await edit_msg(client, query.message, text, reply_markup=markup)
     await query.answer()
 
 
@@ -144,7 +144,7 @@ async def settings_toggle_protect(client: Client, query: CallbackQuery):
     except Exception:
         logger.exception("Failed to persist protect_content setting")
     text, markup = build_protect_panel(client)
-    await edit_styled(client, query.message, text, reply_markup=markup)
+    await edit_msg(client, query.message, text, reply_markup=markup)
     await query.answer(f"Protect Content {'enabled' if value else 'disabled'}")
 
 
@@ -155,7 +155,7 @@ async def settings_menu_autodel(client: Client, query: CallbackQuery):
     await ensure_settings_loaded(client)
     current = client.settings.get("auto_delete", 0)
 
-    await edit_styled(
+    await edit_msg(
         client,
         query.message,
         "<b>➲ ᴀᴜᴛᴏ ᴅᴇʟᴇᴛᴇ ᴛɪᴍᴇ</b>\n\n"
@@ -169,16 +169,16 @@ async def settings_menu_autodel(client: Client, query: CallbackQuery):
 
     if reply_text is None:
         text = "<b>😕 ᴛɪᴍᴇᴅ ᴏᴜᴛ</b>\n\n<i>_ʏᴏᴜ ᴅɪᴅɴ'ᴛ ᴀᴅᴅ ᴀɴʏ ᴛɪᴍᴇ ᴠᴀʟᴜᴇ. ꜱᴇᴀꜱᴏɴ ᴛɪᴍᴇᴅ ᴏᴜᴛ_</i>"
-        markup = InlineKeyboardMarkup([[styled_button("◂ ʙᴀᴄᴋ", callback_data="set_menu_main", style="danger")]])
-        await edit_styled(client, query.message, text, reply_markup=markup)
+        markup = InlineKeyboardMarkup([[InlineKeyboardButton("◂ ʙᴀᴄᴋ", callback_data="set_menu_main")]])
+        await edit_msg(client, query.message, text, reply_markup=markup)
         return
 
     try:
         value = int(reply_text.strip())
     except ValueError:
         text = "<b>😵‍💫 ɪɴᴠᴀʟɪᴅ ᴠᴀʟᴜᴇ.</b> ᴘʟᴇᴀꜱᴇ ꜱᴇɴᴅ ᴀ ᴠᴀʟɪᴅ ɪɴᴛᴇɢᴇʀ"
-        markup = InlineKeyboardMarkup([[styled_button("◂ ʙᴀᴄᴋ", callback_data="set_menu_main", style="danger")]])
-        await edit_styled(client, query.message, text, reply_markup=markup)
+        markup = InlineKeyboardMarkup([[InlineKeyboardButton("◂ ʙᴀᴄᴋ", callback_data="set_menu_main")]])
+        await edit_msg(client, query.message, text, reply_markup=markup)
         return
 
     if value != -1:
@@ -190,7 +190,7 @@ async def settings_menu_autodel(client: Client, query: CallbackQuery):
             logger.exception("Failed to persist auto_delete setting")
 
     text, markup = build_main_settings_panel(client)
-    await edit_styled(client, query.message, text, reply_markup=markup)
+    await edit_msg(client, query.message, text, reply_markup=markup)
 
 
 @Client.on_callback_query(filters.regex("^set_menu_fsub$"))
@@ -199,7 +199,7 @@ async def settings_menu_fsub(client: Client, query: CallbackQuery):
         return await query.answer("Not authorized", show_alert=True)
     await ensure_fsub_loaded(client)
     text, markup = build_fsub_panel(client)
-    await edit_styled(client, query.message, text, reply_markup=markup)
+    await edit_msg(client, query.message, text, reply_markup=markup)
     await query.answer()
 
 
@@ -209,7 +209,7 @@ async def settings_fsub_add(client: Client, query: CallbackQuery):
         return await query.answer("Not authorized", show_alert=True)
     await ensure_fsub_loaded(client)
 
-    await edit_styled(
+    await edit_msg(
         client,
         query.message,
         "<b>Q. ʜᴏᴡ ᴛᴏ ᴀᴅᴅ ᴀ ᴄʜᴀɴɴᴇʟ?</b>\n\n"
@@ -231,8 +231,8 @@ async def settings_fsub_add(client: Client, query: CallbackQuery):
     else:
         text = await process_fsub_add(client, reply_text.split())
 
-    markup = InlineKeyboardMarkup([[styled_button("◂ ʙᴀᴄᴋ", callback_data="set_menu_fsub", style="danger")]])
-    await edit_styled(client, query.message, text, reply_markup=markup)
+    markup = InlineKeyboardMarkup([[InlineKeyboardButton("◂ ʙᴀᴄᴋ", callback_data="set_menu_fsub")]])
+    await edit_msg(client, query.message, text, reply_markup=markup)
 
 
 @Client.on_callback_query(filters.regex("^set_fsub_remove$"))
@@ -241,7 +241,7 @@ async def settings_fsub_remove(client: Client, query: CallbackQuery):
         return await query.answer("Not authorized", show_alert=True)
     await ensure_fsub_loaded(client)
 
-    await edit_styled(
+    await edit_msg(
         client,
         query.message,
         "<b>➲ ʀᴇᴍᴏᴠᴇ ꜰᴏʀᴄᴇ-ꜱᴜʙ ᴄʜᴀɴɴᴇʟ</b>\n\n"
@@ -256,6 +256,7 @@ async def settings_fsub_remove(client: Client, query: CallbackQuery):
     else:
         text = await process_fsub_remove(client, reply_text.strip())
 
-    markup = InlineKeyboardMarkup([[styled_button("◂ ʙᴀᴄᴋ", callback_data="set_menu_fsub", style="danger")]])
-    await edit_styled(client, query.message, text, reply_markup=markup)
+    markup = InlineKeyboardMarkup([[InlineKeyboardButton("◂ ʙᴀᴄᴋ", callback_data="set_menu_fsub")]])
+    await edit_msg(client, query.message, text, reply_markup=markup)
+
     
