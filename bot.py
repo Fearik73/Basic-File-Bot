@@ -1,7 +1,6 @@
 import logging
 import time
 
-import pyrogram.utils
 from pyrogram import Client, idle
 from pyrogram.enums import ParseMode
 
