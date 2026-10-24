@@ -18,12 +18,18 @@ _ACTIVE = {ChatMemberStatus.MEMBER, ChatMemberStatus.ADMINISTRATOR, ChatMemberSt
 
 @Client.on_chat_join_request()
 async def fsub_join_request(client: Client, chat_join_request: ChatJoinRequest):
+    cid = chat_join_request.chat.id
+    uid = chat_join_request.from_user.id
+    d = chat_join_request.date
+    lag = time.time() - d.timestamp() if d else -1
+    logger.info("JOIN_REQ got ch=%s user=%s lag=%.1fs", cid, uid, lag)
     try:
         await ensure_fsub_loaded(client)
-        channel_id = chat_join_request.chat.id
-        if channel_id not in client.fsub_dict:
+        if cid not in client.fsub_dict:
+            logger.warning("JOIN_REQ skipped ch=%s not in fsub_dict keys=%s", cid, list(client.fsub_dict))
             return
-        await add_join_request(channel_id, chat_join_request.from_user.id)
+        await add_join_request(cid, uid)
+        logger.info("JOIN_REQ saved ch=%s user=%s", cid, uid)
     except Exception:
         logger.exception("Join request save failed")
 
