@@ -5,7 +5,7 @@ import time
 from datetime import datetime, timedelta
 
 from pyrogram import Client
-from pyrogram.types import Message, InlineKeyboardMarkup
+from pyrogram.types import Message, InlineKeyboardMarkup, InlineKeyboardButton
 from pyrogram.enums import ChatMemberStatus
 from pyrogram.errors import UserNotParticipant
 
@@ -15,7 +15,7 @@ from database import (
     get_join_request_status, update_join_request_status, remove_join_request,
     get_all_flinks, add_flink, remove_flink, has_flink_seen, mark_flink_seen,
 )
-from helper.styling import styled_button, send_styled, safe_reply
+from helper.messaging import send_msg, safe_reply
 
 logger = logging.getLogger(__name__)
 
@@ -182,7 +182,7 @@ def force_sub(func):
 
         rows = [buttons_raw[i:i + 2] for i in range(0, len(buttons_raw), 2)]
         markup = InlineKeyboardMarkup(
-            [[styled_button(b["text"], url=b["url"], style=b["style"]) for b in row] for row in rows]
+            [[InlineKeyboardButton(b["text"], url=b["url"]) for b in row] for row in rows]
         )
 
         try:
@@ -190,7 +190,7 @@ def force_sub(func):
         except Exception:
             pass
 
-        await send_styled(
+        await send_msg(
             client,
             message.chat.id,
             FSUB_MESSAGE,
@@ -382,6 +382,7 @@ async def process_fsub_remove(client: Client, channel_id_raw: str) -> str:
         f"<b>ᴄʜᴀɴɴᴇʟ:</b> {name}\n"
         f"<b>ɪᴅ:</b> <code>{channel_id}</code>"
     )
+
 
 
 
