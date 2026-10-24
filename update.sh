@@ -1,5 +1,5 @@
 #!/bin/bash
-REPO="https://github.com/FEARIK73/babaji.git"
+REPO="https://github.com/Fearik73/Basic-File-Bot"
 BRANCH="main"
 
 set -e
