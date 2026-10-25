@@ -4,10 +4,10 @@ import logging
 import time
 from datetime import datetime, timedelta
 
-from pyrogram import Client
+from pyrogram import Client, raw
 from pyrogram.types import Message, InlineKeyboardMarkup, InlineKeyboardButton
 from pyrogram.enums import ChatMemberStatus
-from pyrogram.errors import UserNotParticipant
+from pyrogram.errors import UserNotParticipant, RPCError
 
 from config import FSUB_MESSAGE, FSUB_PHOTO
 from database import (
@@ -21,6 +21,66 @@ logger = logging.getLogger(__name__)
 
 
 _ACTIVE = (ChatMemberStatus.MEMBER, ChatMemberStatus.ADMINISTRATOR, ChatMemberStatus.OWNER)
+
+_LINK_CHECK_TTL = 60
+_link_checked = {}
+_link_locks = {}
+
+
+async def _link_is_valid(client: Client, channel_id: int, link: str) -> bool:
+    try:
+        res = await client.invoke(
+            raw.functions.messages.GetExportedChatInvite(
+                peer=await client.resolve_peer(channel_id),
+                link=link,
+            )
+        )
+        invite = res.invite
+        admin_id = getattr(invite, "admin_id", None)
+        if admin_id is not None and admin_id != client.me.id:
+            logger.warning("Fsub link for channel_id=%s was not created by this bot, replacing it", channel_id)
+            return False
+        if getattr(invite, "revoked", False):
+            return False
+        exp = getattr(invite, "expire_date", None)
+        if exp and exp < time.time():
+            return False
+        return True
+    except RPCError as e:
+        if getattr(e, "CODE", None) in (420, 500):
+            logger.warning("Could not verify invite link for channel_id=%s: %s", channel_id, e)
+            return True
+        logger.warning("Fsub link for channel_id=%s is not usable by this bot (%s), replacing it", channel_id, e)
+        return False
+    except Exception as e:
+        logger.warning("Could not verify invite link for channel_id=%s: %s", channel_id, e)
+        return True
+
+
+async def _ensure_valid_link(client: Client, channel_id: int, data: dict):
+    lock = _link_locks.setdefault(channel_id, asyncio.Lock())
+    async with lock:
+        link = data.get("link")
+        if link and time.monotonic() - _link_checked.get(channel_id, 0) < _LINK_CHECK_TTL:
+            return link
+        if link and await _link_is_valid(client, channel_id, link):
+            _link_checked[channel_id] = time.monotonic()
+            return link
+        try:
+            invite = await client.create_chat_invite_link(
+                channel_id, creates_join_request=data.get("request", False)
+            )
+            link = invite.invite_link
+            data["link"] = link
+            _link_checked[channel_id] = time.monotonic()
+            logger.info("Fsub link refreshed for channel_id=%s", channel_id)
+            try:
+                await add_fsub_channel(channel_id, {"link": link})
+            except Exception:
+                logger.exception("Failed to save refreshed fsub link channel_id=%s", channel_id)
+        except Exception:
+            logger.exception("Error refreshing invite link for channel_id=%s", channel_id)
+        return link
 
 
 async def _request_pending(channel_id: int, user_id: int) -> bool:
@@ -173,6 +233,8 @@ def force_sub(func):
                         link = invite.invite_link
                     except Exception:
                         logger.exception("Error creating invite link for channel_id=%s", key)
+                else:
+                    link = await _ensure_valid_link(client, key, data)
 
             buttons_raw.append({"text": f"Channel {rank:02d}", "url": link, "style": "primary"})
 
@@ -382,6 +444,7 @@ async def process_fsub_remove(client: Client, channel_id_raw: str) -> str:
         f"<b>ᴄʜᴀɴɴᴇʟ:</b> {name}\n"
         f"<b>ɪᴅ:</b> <code>{channel_id}</code>"
     )
+
 
 
 
